@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: alooola-mini-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alooola
+      POSTGRES_PASSWORD: alooola_dev
+      POSTGRES_DB: alooola_mini
+    ports:
+      - "5432:5432"
+    volumes:
+      - alooola_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alooola -d alooola_mini"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  alooola_pgdata:

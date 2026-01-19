@@ -1,0 +1,18 @@
+{
+  "name": "alooola-monorepo",
+  "private": true,
+  "workspaces": [
+    "figma-react-web",
+    "alooola-mini/apps/*",
+    "alooola-mini/services/*",
+    "alooola-mini/packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run -ws --if-present dev",
+    "build": "npm run -ws --if-present build",
+    "lint": "npm run -ws --if-present lint",
+    "test": "npm run -ws --if-present test",
+    "db:push": "npm run -w @alooola/api db:push",
+    "db:migrate": "npm run -w @alooola/api db:migrate"
+  }
+}
