@@ -1,3 +1,6 @@
+# Project Structure
+
+```
 /root
   /figma-react-web        # reference ui
   /alooola-mini           # monorepo
@@ -10,4 +13,4 @@
     /infra
       docker-compose.yml  # local postgres
     README.md
-
+```
