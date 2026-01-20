@@ -13,6 +13,8 @@
     "lint": "npm run -ws --if-present lint",
     "test": "npm run -ws --if-present test",
     "db:push": "npm run -w @alooola/api db:push",
-    "db:migrate": "npm run -w @alooola/api db:migrate"
+    "db:migrate": "npm run -w @alooola/api db:migrate",
+    "db:seed": "npm run -w @alooola/api db:seed",
+    "db:generate": "npm run -w @alooola/api db:generate"
   }
 }
