@@ -2,12 +2,12 @@
   "name": "alooola",
   "private": true,
   "scripts": {
-    "setup": "npm --prefix alooola-mini install && npm --prefix figma-react-web install",
+    "setup": "npm --prefix alooola-mini install && npm --prefix tools/figma-react-web install",
     "dev": "npm --prefix alooola-mini run dev",
     "dev:mobile": "npm --prefix alooola-mini run dev:mobile",
     "dev:mobile:clear": "npm --prefix alooola-mini run dev:mobile:clear",
     "dev:api": "npm --prefix alooola-mini run dev:api",
-    "dev:web": "npm --prefix figma-react-web run dev",
+    "dev:web": "npm --prefix tools/figma-react-web run dev",
     "db:up": "docker compose -f alooola-mini/infra/docker-compose.yml up -d",
     "db:down": "docker compose -f alooola-mini/infra/docker-compose.yml down -v"
   },

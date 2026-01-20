@@ -2,9 +2,8 @@
   "name": "@alooola/alooola-mini",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "services/*",
-    "packages/*"
+    "mobile",
+    "api"
   ],
   "scripts": {
     "dev": "npm run -ws --if-present dev",
