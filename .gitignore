@@ -4,6 +4,7 @@ figma-react-web/node_modules/
 figma-react-web/build/
 dist/
 alooola-mini/services/api/dist/
+.expo/
 
 # Env
 .env
@@ -11,6 +12,9 @@ alooola-mini/services/api/dist/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# OS
+.DS_Store
 
 # Logs
 logs/

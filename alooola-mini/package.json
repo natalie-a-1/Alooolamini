@@ -1,0 +1,27 @@
+{
+  "name": "@alooola/alooola-mini",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run -ws --if-present dev",
+    "dev:mobile": "npm run -w @alooola/mobile start",
+    "dev:mobile:clear": "npm run -w @alooola/mobile start:clear",
+    "dev:api": "npm run -w @alooola/api dev",
+    "build": "npm run -ws --if-present build",
+    "lint": "npm run -ws --if-present lint",
+    "test": "npm run -ws --if-present test",
+    "db:push": "npm run -w @alooola/api db:push",
+    "db:migrate": "npm run -w @alooola/api db:migrate",
+    "db:seed": "npm run -w @alooola/api db:seed",
+    "db:generate": "npm run -w @alooola/api db:generate"
+  },
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "packageManager": "npm@10.8.2"
+}
+

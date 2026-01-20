@@ -1,10 +1,12 @@
 ## Todo
-- React web --> React native
 
 
 ### UI
 --- small ----
 - remove vertical scrollbar, homepage horizontal scrollbar
+- use alooola logo
+- move all inline demo data to demo db account
+- lower the navbar
 
 --- medium ---
 - remove additional settings in mvp
