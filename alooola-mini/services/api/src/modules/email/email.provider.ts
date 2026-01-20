@@ -1,3 +1,6 @@
+/**
+ * Provider integration for the email module.
+ */
 import { env } from "../../config/env";
 import { sendConsoleEmail } from "./console.provider";
 import { sendResendEmail } from "./resend.provider";
@@ -11,6 +14,7 @@ type EmailPayload = {
   text: string;
 };
 
+/** Send email. */
 export async function sendEmail(payload: EmailPayload) {
   switch (env.EMAIL_PROVIDER) {
     case "console":

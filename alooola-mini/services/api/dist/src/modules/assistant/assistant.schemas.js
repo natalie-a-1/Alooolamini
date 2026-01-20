@@ -1,3 +1,6 @@
+/**
+ * Project source file.
+ */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createMessageSchema = exports.listMessagesSchema = exports.threadDetailSchema = exports.createThreadSchema = void 0;

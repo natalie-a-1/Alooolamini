@@ -1,7 +1,11 @@
+/**
+ * Project source file.
+ */
 import type { Request, Response, NextFunction } from "express";
 import type { ZodSchema } from "zod";
 import { badRequest } from "../lib/errors";
 
+/** Validate. */
 export function validate(schema: ZodSchema) {
   return (req: Request, _res: Response, next: NextFunction) => {
     const result = schema.safeParse({

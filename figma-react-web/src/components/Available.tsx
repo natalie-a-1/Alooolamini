@@ -1,5 +1,9 @@
+/**
+ * React UI component.
+ */
 import { Gift } from 'lucide-react';
 
+/** React component for Available. */
 export function Available() {
   const availableBalance = 32547.00;
   const totalRewards = 1542.00;

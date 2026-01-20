@@ -1,3 +1,6 @@
+/**
+ * React UI component.
+ */
 "use client";
 
 import * as CollapsiblePrimitive from "@radix-ui/react-collapsible@1.1.3";

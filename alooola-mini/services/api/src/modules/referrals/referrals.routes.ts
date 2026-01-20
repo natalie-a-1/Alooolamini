@@ -1,3 +1,6 @@
+/**
+ * Route handlers for the referrals module.
+ */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
@@ -5,6 +8,7 @@ import { createRateLimiter } from "../../middleware/rateLimit";
 import { referralEventSchema } from "./referrals.schemas";
 import { createReferralEvent, getOrCreateReferral, getReferralStats } from "./referrals.service";
 
+/** Router for referrals routes. */
 export const referralsRouter = Router();
 
 const referralLimiter = createRateLimiter(60 * 1000, 30);

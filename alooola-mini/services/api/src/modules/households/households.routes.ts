@@ -1,3 +1,6 @@
+/**
+ * Route handlers for the households module.
+ */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
@@ -16,6 +19,7 @@ import {
   updateMember,
 } from "./households.service";
 
+/** Router for households routes. */
 export const householdsRouter = Router();
 
 householdsRouter.post("/", requireAuth, validate(createHouseholdSchema), async (req, res, next) => {

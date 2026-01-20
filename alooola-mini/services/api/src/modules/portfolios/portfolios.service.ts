@@ -1,3 +1,6 @@
+/**
+ * Business logic for the portfolios module.
+ */
 import { prisma } from "../../db/prisma";
 import { forbidden, notFound } from "../../lib/errors";
 
@@ -10,12 +13,14 @@ async function ensureHouseholdAccess(userId: string, householdId: string) {
   }
 }
 
+/** List portfolios. */
 export async function listPortfolios() {
   return prisma.curatedPortfolio.findMany({
     orderBy: { createdAt: "asc" },
   });
 }
 
+/** Get portfolio. */
 export async function getPortfolio(portfolioId: string) {
   const portfolio = await prisma.curatedPortfolio.findUnique({
     where: { id: portfolioId },
@@ -27,6 +32,7 @@ export async function getPortfolio(portfolioId: string) {
   return portfolio;
 }
 
+/** List holdings. */
 export async function listHoldings(portfolioId: string) {
   return prisma.portfolioHolding.findMany({
     where: { portfolioId },
@@ -34,6 +40,7 @@ export async function listHoldings(portfolioId: string) {
   });
 }
 
+/** Create position. */
 export async function createPosition(userId: string, householdId: string, data: { portfolioId: string; amountInvested: number }) {
   await ensureHouseholdAccess(userId, householdId);
   return prisma.userPortfolioPosition.create({
@@ -46,6 +53,7 @@ export async function createPosition(userId: string, householdId: string, data: 
   });
 }
 
+/** List positions. */
 export async function listPositions(userId: string, householdId: string) {
   await ensureHouseholdAccess(userId, householdId);
   return prisma.userPortfolioPosition.findMany({
@@ -77,6 +85,7 @@ function rangeToDate(range?: string) {
   }
 }
 
+/** List snapshots. */
 export async function listSnapshots(userId: string, householdId: string, range?: string) {
   await ensureHouseholdAccess(userId, householdId);
   const fromDate = rangeToDate(range);

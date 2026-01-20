@@ -1,3 +1,6 @@
+/**
+ * React UI component.
+ */
 import { ChevronRight, TrendingUp, AlertCircle, Info, ArrowUpRight } from 'lucide-react';
 import { useState } from 'react';
 
@@ -14,6 +17,7 @@ interface OpportunityDetailProps {
   onBack: () => void;
 }
 
+/** React component for Opportunity Detail. */
 export function OpportunityDetail({ opportunity, onBack }: OpportunityDetailProps) {
   const [amount, setAmount] = useState('');
 

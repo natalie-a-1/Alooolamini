@@ -1,3 +1,6 @@
+/**
+ * Environment variable parsing and validation.
+ */
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -24,6 +27,7 @@ if (!parsed.success) {
   throw new Error("Invalid environment variables");
 }
 
+/** Helper for env. */
 export const env = {
   ...parsed.data,
   PORT: Number(parsed.data.PORT),

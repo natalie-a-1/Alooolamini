@@ -1,9 +1,13 @@
+/**
+ * Route handlers for the advisors module.
+ */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
 import { advisorSlotsSchema } from "./advisors.schemas";
 import { listAdvisorSlots, listAdvisors } from "./advisors.service";
 
+/** Router for advisors routes. */
 export const advisorsRouter = Router();
 
 advisorsRouter.get("/", requireAuth, async (_req, res, next) => {

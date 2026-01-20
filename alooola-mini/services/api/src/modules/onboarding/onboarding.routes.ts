@@ -1,9 +1,13 @@
+/**
+ * Route handlers for the onboarding module.
+ */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
 import { onboardingMeSchema, onboardingOptionsSchema } from "./onboarding.schemas";
 import { getOnboardingForUser, getOnboardingOptions, upsertOnboarding } from "./onboarding.service";
 
+/** Router for onboarding routes. */
 export const onboardingRouter = Router();
 
 onboardingRouter.get("/options", validate(onboardingOptionsSchema), async (_req, res, next) => {

@@ -1,3 +1,6 @@
+/**
+ * Route handlers for the portfolios module.
+ */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { requireHouseholdRole } from "../../middleware/requireHouseholdRole";
@@ -5,6 +8,7 @@ import { validate } from "../../middleware/validate";
 import { createPositionSchema, listPositionsSchema, listSnapshotsSchema } from "./portfolios.schemas";
 import { createPosition, listPositions, listSnapshots } from "./portfolios.service";
 
+/** Router for portfolio household routes. */
 export const portfolioHouseholdRouter = Router();
 
 portfolioHouseholdRouter.post(

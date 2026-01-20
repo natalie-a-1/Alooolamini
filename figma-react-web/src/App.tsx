@@ -1,3 +1,6 @@
+/**
+ * Project source file.
+ */
 import { useState } from 'react';
 import { Home } from './components/Home';
 import { Available } from './components/Available';
@@ -8,6 +11,7 @@ import { LoginRegister } from './components/LoginRegister';
 import { Onboarding } from './components/Onboarding';
 import { Discover } from './components/Discover';
 
+/** React component for App. */
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [isAuthenticated, setIsAuthenticated] = useState(false);

@@ -1,6 +1,10 @@
+/**
+ * React UI component.
+ */
 import { Users, Gift, Settings, ChevronRight, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 
+/** React component for Profile. */
 export function Profile() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [jointAccountEnabled, setJointAccountEnabled] = useState(false);

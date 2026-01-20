@@ -1,5 +1,9 @@
+/**
+ * Validation schemas for the households module.
+ */
 import { z } from "zod";
 
+/** Validation schema for create household. */
 export const createHouseholdSchema = z.object({
   body: z.object({
     name: z.string().min(1),
@@ -8,6 +12,7 @@ export const createHouseholdSchema = z.object({
   query: z.object({}).optional().default({}),
 });
 
+/** Validation schema for update member. */
 export const updateMemberSchema = z.object({
   body: z.object({
     role: z.enum(["owner", "member", "viewer"]).optional(),
@@ -20,6 +25,7 @@ export const updateMemberSchema = z.object({
   query: z.object({}).optional().default({}),
 });
 
+/** Validation schema for create invite. */
 export const createInviteSchema = z.object({
   body: z.object({
     email: z.string().email(),
@@ -30,6 +36,7 @@ export const createInviteSchema = z.object({
   query: z.object({}).optional().default({}),
 });
 
+/** Validation schema for accept invite. */
 export const acceptInviteSchema = z.object({
   body: z.object({
     email: z.string().email().optional(),

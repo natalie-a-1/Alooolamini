@@ -1,3 +1,6 @@
+/**
+ * Project source file.
+ */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.patchTransactionSchema = exports.transactionDetailSchema = exports.listTransactionsSchema = exports.createCategorySchema = exports.listCategoriesSchema = exports.accountDetailSchema = exports.listAccountsSchema = void 0;

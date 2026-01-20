@@ -1,10 +1,15 @@
+/**
+ * Business logic for the advisors module.
+ */
 import { prisma } from "../../db/prisma";
 import { badRequest, notFound } from "../../lib/errors";
 
+/** List advisors. */
 export async function listAdvisors() {
   return prisma.advisor.findMany({ orderBy: { createdAt: "asc" } });
 }
 
+/** List advisor slots. */
 export async function listAdvisorSlots(advisorId: string) {
   return prisma.advisorSlot.findMany({
     where: { advisorId },
@@ -12,6 +17,7 @@ export async function listAdvisorSlots(advisorId: string) {
   });
 }
 
+/** Book appointment. */
 export async function bookAppointment(userId: string, data: { advisorId: string; slotId: string; notes?: string }) {
   const slot = await prisma.advisorSlot.findUnique({ where: { id: data.slotId } });
   if (!slot) {

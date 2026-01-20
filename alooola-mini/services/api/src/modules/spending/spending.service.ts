@@ -1,3 +1,6 @@
+/**
+ * Business logic for the spending module.
+ */
 import { prisma } from "../../db/prisma";
 import { decodeCursor, encodeCursor, buildCursorResponse } from "../../lib/pagination";
 import { notFound, forbidden } from "../../lib/errors";
@@ -11,6 +14,7 @@ async function ensureHouseholdAccess(userId: string, householdId: string) {
   }
 }
 
+/** List accounts. */
 export async function listAccounts(householdId: string) {
   return prisma.account.findMany({
     where: { householdId },
@@ -19,6 +23,7 @@ export async function listAccounts(householdId: string) {
   });
 }
 
+/** Get account. */
 export async function getAccount(userId: string, accountId: string) {
   const account = await prisma.account.findUnique({
     where: { id: accountId },
@@ -31,6 +36,7 @@ export async function getAccount(userId: string, accountId: string) {
   return account;
 }
 
+/** List categories. */
 export async function listCategories(householdId: string) {
   return prisma.category.findMany({
     where: { householdId },
@@ -38,12 +44,14 @@ export async function listCategories(householdId: string) {
   });
 }
 
+/** Create category. */
 export async function createCategory(householdId: string, name: string) {
   return prisma.category.create({
     data: { householdId, name },
   });
 }
 
+/** List transactions. */
 export async function listTransactions(householdId: string, options: {
   cursor?: string;
   limit?: number;
@@ -103,6 +111,7 @@ export async function listTransactions(householdId: string, options: {
   return cursorResponse;
 }
 
+/** Get transaction. */
 export async function getTransaction(userId: string, transactionId: string) {
   const txn = await prisma.transaction.findUnique({
     where: { id: transactionId },
@@ -115,6 +124,7 @@ export async function getTransaction(userId: string, transactionId: string) {
   return txn;
 }
 
+/** Update transaction. */
 export async function updateTransaction(userId: string, transactionId: string, data: {
   categoryId?: string;
   note?: string;

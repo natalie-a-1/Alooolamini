@@ -1,3 +1,4 @@
+# Configuration for services or tooling.
 version: "3.9"
 
 services:

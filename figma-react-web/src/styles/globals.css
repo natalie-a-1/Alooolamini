@@ -1,3 +1,4 @@
+/* Styles for UI layout and components. */
 @custom-variant dark (&:is(.dark *));
 
 :root {

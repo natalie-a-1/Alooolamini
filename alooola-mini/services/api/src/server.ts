@@ -1,8 +1,12 @@
+/**
+ * HTTP server bootstrap and shutdown handling.
+ */
 import { createServer } from "http";
 import { createApp } from "./app";
 import { env } from "./config/env";
 import { disconnectPrisma } from "./db/prisma";
 
+/** Start server. */
 export async function startServer() {
   const app = createApp();
   const server = createServer(app);

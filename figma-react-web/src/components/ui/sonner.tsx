@@ -1,3 +1,6 @@
+/**
+ * React UI component.
+ */
 "use client";
 
 import { useTheme } from "next-themes@0.4.6";

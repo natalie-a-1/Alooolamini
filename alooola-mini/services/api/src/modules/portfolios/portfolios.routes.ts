@@ -1,3 +1,6 @@
+/**
+ * Route handlers for the portfolios module.
+ */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
@@ -6,6 +9,7 @@ import {
 } from "./portfolios.schemas";
 import { getPortfolio, listHoldings, listPortfolios } from "./portfolios.service";
 
+/** Router for portfolios routes. */
 export const portfoliosRouter = Router();
 
 portfoliosRouter.get("/", requireAuth, async (_req, res, next) => {

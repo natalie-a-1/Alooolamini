@@ -1,3 +1,6 @@
+/**
+ * Business logic for the referrals module.
+ */
 import { prisma } from "../../db/prisma";
 import { Prisma } from "@prisma/client";
 import { generateToken } from "../../lib/crypto";
@@ -14,6 +17,7 @@ async function generateUniqueCode() {
   return generateToken(6);
 }
 
+/** Get or create referral. */
 export async function getOrCreateReferral(userId: string) {
   const existing = await prisma.referral.findFirst({ where: { ownerUserId: userId } });
   if (existing) return existing;
@@ -22,6 +26,7 @@ export async function getOrCreateReferral(userId: string) {
   return prisma.referral.create({ data: { ownerUserId: userId, code } });
 }
 
+/** Get referral stats. */
 export async function getReferralStats(userId: string) {
   const referral = await prisma.referral.findFirst({ where: { ownerUserId: userId } });
   if (!referral) {
@@ -42,6 +47,7 @@ export async function getReferralStats(userId: string) {
   return { referral, counts };
 }
 
+/** Create referral event. */
 export async function createReferralEvent(code: string, eventType: "click" | "signup" | "complete", meta?: Record<string, unknown>) {
   const referral = await prisma.referral.findUnique({ where: { code } });
   if (!referral) {

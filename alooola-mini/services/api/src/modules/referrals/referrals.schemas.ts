@@ -1,5 +1,9 @@
+/**
+ * Validation schemas for the referrals module.
+ */
 import { z } from "zod";
 
+/** Validation schema for referral event. */
 export const referralEventSchema = z.object({
   body: z.object({
     eventType: z.enum(["click", "signup", "complete"]),

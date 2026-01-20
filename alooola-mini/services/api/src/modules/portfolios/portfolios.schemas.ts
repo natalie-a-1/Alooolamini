@@ -1,11 +1,16 @@
+/**
+ * Validation schemas for the portfolios module.
+ */
 import { z } from "zod";
 
+/** Validation schema for portfolio detail. */
 export const portfolioDetailSchema = z.object({
   body: z.object({}).optional().default({}),
   params: z.object({ portfolioId: z.string().uuid() }),
   query: z.object({}).optional().default({}),
 });
 
+/** Validation schema for create position. */
 export const createPositionSchema = z.object({
   body: z.object({
     portfolioId: z.string().uuid(),
@@ -15,12 +20,14 @@ export const createPositionSchema = z.object({
   query: z.object({}).optional().default({}),
 });
 
+/** Validation schema for list positions. */
 export const listPositionsSchema = z.object({
   body: z.object({}).optional().default({}),
   params: z.object({ householdId: z.string().uuid() }),
   query: z.object({}).optional().default({}),
 });
 
+/** Validation schema for list snapshots. */
 export const listSnapshotsSchema = z.object({
   body: z.object({}).optional().default({}),
   params: z.object({ householdId: z.string().uuid() }),

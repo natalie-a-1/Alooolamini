@@ -1,3 +1,6 @@
+/**
+ * Project source file.
+ */
 export class ApiError extends Error {
   status: number;
   code: string;
@@ -11,22 +14,27 @@ export class ApiError extends Error {
   }
 }
 
+/** Helper for bad request. */
 export function badRequest(message: string, details?: Record<string, unknown>) {
   return new ApiError(400, "BAD_REQUEST", message, details);
 }
 
+/** Helper for unauthorized. */
 export function unauthorized(message = "Unauthorized") {
   return new ApiError(401, "UNAUTHORIZED", message);
 }
 
+/** Helper for forbidden. */
 export function forbidden(message = "Forbidden") {
   return new ApiError(403, "FORBIDDEN", message);
 }
 
+/** Helper for not found. */
 export function notFound(message = "Not found") {
   return new ApiError(404, "NOT_FOUND", message);
 }
 
+/** Helper for conflict. */
 export function conflict(message = "Conflict") {
   return new ApiError(409, "CONFLICT", message);
 }

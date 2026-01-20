@@ -1,3 +1,6 @@
+/**
+ * Route handlers for the assistant module.
+ */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
@@ -9,6 +12,7 @@ import {
 } from "./assistant.schemas";
 import { addMessage, createThread, getThread, listMessages, listThreads } from "./assistant.service";
 
+/** Router for assistant routes. */
 export const assistantRouter = Router();
 
 assistantRouter.get("/threads", requireAuth, async (req, res, next) => {

@@ -1,3 +1,6 @@
+/**
+ * Project source file.
+ */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.listSnapshotsSchema = exports.listPositionsSchema = exports.createPositionSchema = exports.portfolioDetailSchema = void 0;

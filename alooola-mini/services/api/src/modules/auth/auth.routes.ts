@@ -1,3 +1,6 @@
+/**
+ * Route handlers for the auth module.
+ */
 import { Router } from "express";
 import { validate } from "../../middleware/validate";
 import { createRateLimiter } from "../../middleware/rateLimit";
@@ -20,6 +23,7 @@ import {
 import { prisma } from "../../db/prisma";
 import { generateToken } from "../../lib/crypto";
 
+/** Router for auth routes. */
 export const authRouter = Router();
 
 const emailLimiter = createRateLimiter(60 * 1000, 10);

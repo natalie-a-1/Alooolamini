@@ -1,3 +1,6 @@
+/**
+ * API route registration.
+ */
 import { Router } from "express";
 import { authRouter } from "./modules/auth/auth.routes";
 import { householdsRouter } from "./modules/households/households.routes";
@@ -11,6 +14,7 @@ import { assistantRouter } from "./modules/assistant/assistant.routes";
 import { advisorsRouter } from "./modules/advisors/advisors.routes";
 import { advisorAppointmentsRouter } from "./modules/advisors/advisor-appointments.routes";
 
+/** Router for api routes. */
 export const apiRouter = Router();
 
 apiRouter.get("/health", (_req, res) => {

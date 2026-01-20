@@ -1,3 +1,6 @@
+/**
+ * Provider integration for the email module.
+ */
 import nodemailer from "nodemailer";
 import { env } from "../../config/env";
 
@@ -12,6 +15,7 @@ const transporter = nodemailer.createTransport({
     : undefined,
 });
 
+/** Send smtp email. */
 export async function sendSmtpEmail(payload: {
   to: string;
   subject: string;

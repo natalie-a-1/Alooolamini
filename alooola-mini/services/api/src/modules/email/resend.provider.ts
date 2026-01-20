@@ -1,6 +1,10 @@
+/**
+ * Provider integration for the email module.
+ */
 import { env } from "../../config/env";
 import { badRequest } from "../../lib/errors";
 
+/** Send resend email. */
 export async function sendResendEmail(payload: {
   to: string;
   subject: string;

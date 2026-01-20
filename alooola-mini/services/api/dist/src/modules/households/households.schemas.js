@@ -1,3 +1,6 @@
+/**
+ * Project source file.
+ */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.acceptInviteSchema = exports.createInviteSchema = exports.updateMemberSchema = exports.createHouseholdSchema = void 0;

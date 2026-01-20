@@ -1,3 +1,6 @@
+/**
+ * React UI component.
+ */
 import { useState } from 'react';
 import { ChevronRight, Target, TrendingUp, Shield, Gift, Users, CheckCircle2, GraduationCap, Home, Crosshair } from 'lucide-react';
 
@@ -5,6 +8,7 @@ interface OnboardingProps {
   onComplete: () => void;
 }
 
+/** React component for Onboarding. */
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(0);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);

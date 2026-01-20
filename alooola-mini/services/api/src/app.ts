@@ -1,3 +1,6 @@
+/**
+ * Express app configuration and middleware.
+ */
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -6,6 +9,7 @@ import { requestId } from "./middleware/requestId";
 import { apiRouter } from "./routes";
 import { ApiError } from "./lib/errors";
 
+/** Create app. */
 export function createApp() {
   const app = express();
 

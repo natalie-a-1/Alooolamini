@@ -1,3 +1,6 @@
+/**
+ * Project source file.
+ */
 import "dotenv/config";
 import { defineConfig, env } from "prisma/config";
 

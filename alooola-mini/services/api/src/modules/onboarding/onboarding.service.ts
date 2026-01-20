@@ -1,5 +1,9 @@
+/**
+ * Business logic for the onboarding module.
+ */
 import { prisma } from "../../db/prisma";
 
+/** Get onboarding options. */
 export async function getOnboardingOptions() {
   const goals = await prisma.goalOption.findMany({ orderBy: { createdAt: "asc" } });
   return {
@@ -8,6 +12,7 @@ export async function getOnboardingOptions() {
   };
 }
 
+/** Get onboarding for user. */
 export async function getOnboardingForUser(userId: string) {
   const selections = await prisma.userGoalSelection.findMany({
     where: { userId },
@@ -17,6 +22,7 @@ export async function getOnboardingForUser(userId: string) {
   return { selections, profile };
 }
 
+/** Upsert onboarding. */
 export async function upsertOnboarding(userId: string, data: {
   goalKeys?: string[];
   goalOtherText?: string | null;

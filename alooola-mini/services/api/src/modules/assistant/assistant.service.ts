@@ -1,3 +1,6 @@
+/**
+ * Business logic for the assistant module.
+ */
 import { prisma } from "../../db/prisma";
 import { decodeCursor, encodeCursor, buildCursorResponse } from "../../lib/pagination";
 import { notFound, forbidden } from "../../lib/errors";
@@ -17,6 +20,7 @@ async function ensureThreadAccess(userId: string, threadId: string) {
   return thread;
 }
 
+/** List threads. */
 export async function listThreads(userId: string) {
   return prisma.assistantThread.findMany({
     where: { userId },
@@ -24,6 +28,7 @@ export async function listThreads(userId: string) {
   });
 }
 
+/** Create thread. */
 export async function createThread(userId: string, data: { title?: string; householdId?: string }) {
   return prisma.assistantThread.create({
     data: {
@@ -34,11 +39,13 @@ export async function createThread(userId: string, data: { title?: string; house
   });
 }
 
+/** Get thread. */
 export async function getThread(userId: string, threadId: string) {
   await ensureThreadAccess(userId, threadId);
   return prisma.assistantThread.findUnique({ where: { id: threadId } });
 }
 
+/** List messages. */
 export async function listMessages(userId: string, threadId: string, options: { cursor?: string; limit?: number }) {
   await ensureThreadAccess(userId, threadId);
 
@@ -65,6 +72,7 @@ export async function listMessages(userId: string, threadId: string, options: { 
   return cursorResponse;
 }
 
+/** Add message. */
 export async function addMessage(userId: string, threadId: string, content: string) {
   await ensureThreadAccess(userId, threadId);
 

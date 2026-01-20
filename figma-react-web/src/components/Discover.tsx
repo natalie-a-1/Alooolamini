@@ -1,7 +1,11 @@
+/**
+ * React UI component.
+ */
 import { MessageCircle, ChevronRight, Calendar, Send } from 'lucide-react';
 import { useState } from 'react';
 import { OpportunityDetail } from './OpportunityDetail';
 
+/** React component for Discover. */
 export function Discover() {
   const [showAIChat, setShowAIChat] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);

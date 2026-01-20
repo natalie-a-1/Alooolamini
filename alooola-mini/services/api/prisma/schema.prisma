@@ -1,3 +1,4 @@
+// Database schema and Prisma models.
 generator client {
   provider = "prisma-client-js"
 }

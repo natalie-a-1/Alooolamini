@@ -1,3 +1,6 @@
+/**
+ * Business logic for the auth module.
+ */
 import jwt from "jsonwebtoken";
 import { prisma } from "../../db/prisma";
 import { env } from "../../config/env";
@@ -37,6 +40,7 @@ async function createRefreshToken(params: {
   return { rawToken, refresh };
 }
 
+/** Issue tokens. */
 export async function issueTokens(userId: string, email?: string, meta?: { userAgent?: string; ipAddress?: string }) {
   const accessToken = buildAccessToken(userId, email);
   const { rawToken, refresh } = await createRefreshToken({
@@ -48,6 +52,7 @@ export async function issueTokens(userId: string, email?: string, meta?: { userA
   return { accessToken, refreshToken: rawToken, refreshId: refresh.id };
 }
 
+/** Start email verification. */
 export async function startEmailVerification(email: string) {
   const user = await prisma.user.upsert({
     where: { email },
@@ -84,6 +89,7 @@ export async function startEmailVerification(email: string) {
   return { userId: user.id };
 }
 
+/** Helper for verify email token. */
 export async function verifyEmailToken(email: string, token: string, meta?: { userAgent?: string; ipAddress?: string }) {
   const tokenHash = hashToken(token);
   const user = await prisma.user.findUnique({ where: { email } });
@@ -113,6 +119,7 @@ export async function verifyEmailToken(email: string, token: string, meta?: { us
   return { user, tokens };
 }
 
+/** Refresh tokens. */
 export async function refreshTokens(rawRefreshToken: string, meta?: { userAgent?: string; ipAddress?: string }) {
   const tokenHash = hashToken(rawRefreshToken);
   const refresh = await prisma.refreshToken.findUnique({ where: { tokenHash } });
@@ -142,6 +149,7 @@ export async function refreshTokens(rawRefreshToken: string, meta?: { userAgent?
   return { accessToken, refreshToken: rawToken, user };
 }
 
+/** Revoke refresh token. */
 export async function revokeRefreshToken(rawRefreshToken: string) {
   const tokenHash = hashToken(rawRefreshToken);
   const refresh = await prisma.refreshToken.findUnique({ where: { tokenHash } });
@@ -154,6 +162,7 @@ export async function revokeRefreshToken(rawRefreshToken: string) {
   });
 }
 
+/** Revoke all refresh tokens. */
 export async function revokeAllRefreshTokens(userId: string) {
   await prisma.refreshToken.updateMany({
     where: { userId, revokedAt: null },

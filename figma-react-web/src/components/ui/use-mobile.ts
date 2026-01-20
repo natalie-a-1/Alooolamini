@@ -1,7 +1,11 @@
+/**
+ * React UI component.
+ */
 import * as React from "react";
 
 const MOBILE_BREAKPOINT = 768;
 
+/** Helper for use is mobile. */
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
     undefined,

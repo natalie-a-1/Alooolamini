@@ -1,6 +1,10 @@
+/**
+ * React UI component.
+ */
 import { Bell, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 
+/** React component for Home. */
 export function Home() {
   const [timeframe, setTimeframe] = useState('1M');
   const timeframes = ['1M', '3M', '6M', '1Y', 'ALL'];

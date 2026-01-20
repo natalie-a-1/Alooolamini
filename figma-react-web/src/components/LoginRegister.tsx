@@ -1,3 +1,6 @@
+/**
+ * React UI component.
+ */
 import { useState } from 'react';
 import { Mail, Lock, User } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
@@ -7,6 +10,7 @@ interface LoginRegisterProps {
   onRegister: () => void;
 }
 
+/** React component for Login Register. */
 export function LoginRegister({ onLogin, onRegister }: LoginRegisterProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');

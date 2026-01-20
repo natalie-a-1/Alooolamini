@@ -1,11 +1,16 @@
+/**
+ * Validation schemas for the onboarding module.
+ */
 import { z } from "zod";
 
+/** Validation schema for onboarding options. */
 export const onboardingOptionsSchema = z.object({
   body: z.object({}).optional().default({}),
   params: z.object({}).optional().default({}),
   query: z.object({}).optional().default({}),
 });
 
+/** Validation schema for onboarding me. */
 export const onboardingMeSchema = z.object({
   body: z.object({
     goalKeys: z.array(z.string()).optional(),

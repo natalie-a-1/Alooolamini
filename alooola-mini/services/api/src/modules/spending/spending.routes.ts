@@ -1,3 +1,6 @@
+/**
+ * Route handlers for the spending module.
+ */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { requireHouseholdRole } from "../../middleware/requireHouseholdRole";
@@ -21,6 +24,7 @@ import {
   updateTransaction,
 } from "./spending.service";
 
+/** Router for spending routes. */
 export const spendingRouter = Router();
 
 spendingRouter.get(

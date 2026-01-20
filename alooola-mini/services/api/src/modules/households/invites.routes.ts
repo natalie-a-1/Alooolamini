@@ -1,9 +1,13 @@
+/**
+ * Route handlers for the households module.
+ */
 import { Router } from "express";
 import { optionalAuth } from "../../middleware/authOptional";
 import { validate } from "../../middleware/validate";
 import { acceptInviteSchema } from "./households.schemas";
 import { acceptInvite, getInvite } from "./households.service";
 
+/** Router for invites routes. */
 export const invitesRouter = Router();
 
 invitesRouter.get("/:token", async (req, res, next) => {

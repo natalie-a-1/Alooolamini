@@ -1,6 +1,10 @@
+/**
+ * React UI component.
+ */
 import { TrendingDown, TrendingUp, DollarSign, Stethoscope, BookOpen, Briefcase, UtensilsCrossed, Car, Package } from 'lucide-react';
 import { useState } from 'react';
 
+/** React component for Spending. */
 export function Spending() {
   const [timeframe, setTimeframe] = useState('This Month');
   const timeframes = ['This Week', 'This Month', 'This Year'];

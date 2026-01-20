@@ -1,3 +1,6 @@
+/**
+ * Provider integration for the email module.
+ */
 export async function sendConsoleEmail(payload: {
   to: string;
   subject: string;

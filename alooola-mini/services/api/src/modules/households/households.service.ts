@@ -1,3 +1,6 @@
+/**
+ * Business logic for the households module.
+ */
 import { prisma } from "../../db/prisma";
 import { generateToken } from "../../lib/crypto";
 import { badRequest, conflict, notFound } from "../../lib/errors";
@@ -5,6 +8,7 @@ import { env } from "../../config/env";
 import { sendEmail } from "../email/email.provider";
 import { issueTokens } from "../auth/auth.service";
 
+/** Create household. */
 export async function createHousehold(userId: string, name: string) {
   const household = await prisma.household.create({
     data: {
@@ -24,6 +28,7 @@ export async function createHousehold(userId: string, name: string) {
   return household;
 }
 
+/** List households. */
 export async function listHouseholds(userId: string) {
   const memberships = await prisma.householdMember.findMany({
     where: { userId, status: "accepted" },
@@ -37,6 +42,7 @@ export async function listHouseholds(userId: string) {
   }));
 }
 
+/** Get household detail. */
 export async function getHouseholdDetail(userId: string, householdId: string) {
   const membership = await prisma.householdMember.findFirst({
     where: { userId, householdId, status: "accepted" },
@@ -50,6 +56,7 @@ export async function getHouseholdDetail(userId: string, householdId: string) {
   return membership.household;
 }
 
+/** List members. */
 export async function listMembers(householdId: string) {
   return prisma.householdMember.findMany({
     where: { householdId },
@@ -58,6 +65,7 @@ export async function listMembers(householdId: string) {
   });
 }
 
+/** Update member. */
 export async function updateMember(householdId: string, memberId: string, data: { role?: string; status?: string }) {
   return prisma.householdMember.update({
     where: { id: memberId },
@@ -69,6 +77,7 @@ export async function updateMember(householdId: string, memberId: string, data: 
   });
 }
 
+/** Create invite. */
 export async function createInvite(householdId: string, email: string) {
   const existing = await prisma.invite.findFirst({
     where: { householdId, email, status: "pending" },
@@ -107,6 +116,7 @@ export async function createInvite(householdId: string, email: string) {
   return invite;
 }
 
+/** Get invite. */
 export async function getInvite(token: string) {
   const invite = await prisma.invite.findUnique({
     where: { token },
@@ -124,6 +134,7 @@ export async function getInvite(token: string) {
   return invite;
 }
 
+/** Helper for accept invite. */
 export async function acceptInvite(token: string, options: { userId?: string; email?: string }) {
   const invite = await prisma.invite.findUnique({
     where: { token },

@@ -1,3 +1,6 @@
+/**
+ * React UI component.
+ */
 import { Home, Search, Wallet, CreditCard, Grid3x3 } from 'lucide-react';
 
 interface NavigationProps {
@@ -5,6 +8,7 @@ interface NavigationProps {
   setActiveTab: (tab: string) => void;
 }
 
+/** React component for Navigation. */
 export function Navigation({ activeTab, setActiveTab }: NavigationProps) {
   const tabs = [
     { id: 'home', icon: Home, label: 'Home' },

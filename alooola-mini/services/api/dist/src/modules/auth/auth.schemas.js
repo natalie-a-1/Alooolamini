@@ -1,3 +1,6 @@
+/**
+ * Project source file.
+ */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.demoSchema = exports.logoutSchema = exports.refreshSchema = exports.emailVerifySchema = exports.emailStartSchema = void 0;
