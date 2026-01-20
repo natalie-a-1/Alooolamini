@@ -1,6 +1,10 @@
+## Todo
+- React web --> React native
+
+
+### UI
 --- small ----
 - remove vertical scrollbar, homepage horizontal scrollbar
-
 
 --- medium ---
 - remove additional settings in mvp

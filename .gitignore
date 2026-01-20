@@ -2,6 +2,8 @@
 node_modules/
 figma-react-web/node_modules/
 figma-react-web/build/
+dist/
+alooola-mini/services/api/dist/
 
 # Env
 .env
