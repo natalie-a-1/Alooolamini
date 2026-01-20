@@ -8,9 +8,9 @@ import { RADIUS, SPACING } from '@/theme/layout';
 export const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: SPACING.xxl,
+    paddingTop: SPACING.xxxl * 2,
+    paddingBottom: SPACING.xxl,
   },
   header: {
     alignItems: 'center',

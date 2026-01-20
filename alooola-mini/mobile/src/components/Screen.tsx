@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../theme/colors';
 import { SCREEN_PADDING, SPACING } from '../theme/layout';
@@ -37,23 +37,34 @@ export function Screen({
 
   if (!scroll) {
     return (
-      <View style={[styles.container, { backgroundColor }, baseContentStyle, style]}>
-        {children}
-      </View>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor }, style]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <View style={[baseContentStyle, style]}>
+          {children}
+        </View>
+      </KeyboardAvoidingView>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor }, style]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor }, style]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[baseContentStyle, contentContainerStyle]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
       >
         {children}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
