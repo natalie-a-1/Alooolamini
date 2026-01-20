@@ -30,7 +30,7 @@ It covers the features you want to demo:
 ## API conventions
 
 ### Base URL and versioning
-- All routes are under `/v1`.
+- All routes are under `/api/v1` (matches the current server health route).
 
 ### Auth header
 - Use bearer access tokens:
@@ -62,19 +62,34 @@ Cursor format recommendation:
 
 ### Idempotency
 Support `Idempotency-Key` header on create endpoints that might be retried from mobile:
-- `POST /auth/email/start`
-- `POST /households/:id/invites`
-- `POST /referrals/:code/events`
+- `POST /api/v1/auth/email/start`
+- `POST /api/v1/households/:id/invites`
+- `POST /api/v1/referrals/:code/events`
 
 ---
 
 ## Service layout (Express)
 
-Suggested folder structure for `services/api`:
+Current minimal layout (as committed) for `alooola-mini/services/api`:
 
 ```
 services/api/
   src/
+    index.ts
+  prisma/
+    schema.prisma
+    seed.ts
+  prisma.config.ts
+  tsconfig.json
+  package.json
+```
+
+Suggested expansion (when you start implementing modules):
+
+```
+services/api/
+  src/
+    index.ts
     app.ts
     server.ts
     config/
@@ -143,6 +158,7 @@ JWT_ACCESS_SECRET=...
 JWT_REFRESH_SECRET=...
 APP_BASE_URL=https://your-demo-domain.com
 MOBILE_DEEPLINK_BASE=alooolamini://
+PORT=4000
 
 EMAIL_PROVIDER=console|smtpdev|resend
 EMAIL_FROM=noreply@your-demo-domain.com
@@ -174,11 +190,11 @@ RATE_LIMIT_ENABLED=true
 
 | Method | Route | Auth | Purpose |
 |---|---|---:|---|
-| POST | `/v1/auth/email/start` | No | Send verification link/code |
-| POST | `/v1/auth/email/verify` | No | Verify token/code, issue tokens |
-| POST | `/v1/auth/refresh` | No | Exchange refresh token for new access token |
-| POST | `/v1/auth/logout` | Yes | Revoke refresh token |
-| POST | `/v1/auth/demo` | No | Create/login demo user (optional) |
+| POST | `/api/v1/auth/email/start` | No | Send verification link/code |
+| POST | `/api/v1/auth/email/verify` | No | Verify token/code, issue tokens |
+| POST | `/api/v1/auth/refresh` | No | Exchange refresh token for new access token |
+| POST | `/api/v1/auth/logout` | Yes | Revoke refresh token |
+| POST | `/api/v1/auth/demo` | No | Create/login demo user (optional) |
 
 ### Notes
 - Store only **token hash** in DB (`sha256(token)`), compare hashes.
@@ -210,14 +226,14 @@ Use `MemberRole`:
 
 | Method | Route | Auth | Purpose |
 |---|---|---:|---|
-| POST | `/v1/households` | Yes | Create household |
-| GET | `/v1/households/me` | Yes | List households for user |
-| GET | `/v1/households/:householdId` | Yes | Household detail |
-| GET | `/v1/households/:householdId/members` | Yes | Members + roles |
-| PATCH | `/v1/households/:householdId/members/:memberId` | Yes | Update role/status (owner only) |
-| POST | `/v1/households/:householdId/invites` | Yes | Create invite + send email (owner only) |
-| GET | `/v1/invites/:token` | No | Read invite preview (optional) |
-| POST | `/v1/invites/:token/accept` | Yes/No | Accept invite (auth optional) |
+| POST | `/api/v1/households` | Yes | Create household |
+| GET | `/api/v1/households/me` | Yes | List households for user |
+| GET | `/api/v1/households/:householdId` | Yes | Household detail |
+| GET | `/api/v1/households/:householdId/members` | Yes | Members + roles |
+| PATCH | `/api/v1/households/:householdId/members/:memberId` | Yes | Update role/status (owner only) |
+| POST | `/api/v1/households/:householdId/invites` | Yes | Create invite + send email (owner only) |
+| GET | `/api/v1/invites/:token` | No | Read invite preview (optional) |
+| POST | `/api/v1/invites/:token/accept` | Yes/No | Accept invite (auth optional) |
 
 ### Notes
 - For demo convenience: allow accepting an invite by auto-creating a user if not logged in.
@@ -241,13 +257,13 @@ Prefer nesting under household to make access control straightforward:
 
 | Method | Route | Auth | Purpose |
 |---|---|---:|---|
-| GET | `/v1/households/:householdId/accounts` | Yes | List accounts |
-| GET | `/v1/accounts/:accountId` | Yes | Account detail |
-| GET | `/v1/households/:householdId/categories` | Yes | List categories |
-| POST | `/v1/households/:householdId/categories` | Yes | Create category |
-| GET | `/v1/households/:householdId/transactions` | Yes | Transaction feed |
-| GET | `/v1/transactions/:transactionId` | Yes | Transaction detail |
-| PATCH | `/v1/transactions/:transactionId` | Yes | Edit category/note/attribution |
+| GET | `/api/v1/households/:householdId/accounts` | Yes | List accounts |
+| GET | `/api/v1/accounts/:accountId` | Yes | Account detail |
+| GET | `/api/v1/households/:householdId/categories` | Yes | List categories |
+| POST | `/api/v1/households/:householdId/categories` | Yes | Create category |
+| GET | `/api/v1/households/:householdId/transactions` | Yes | Transaction feed |
+| GET | `/api/v1/transactions/:transactionId` | Yes | Transaction detail |
+| PATCH | `/api/v1/transactions/:transactionId` | Yes | Edit category/note/attribution |
 
 ### Transaction feed query params
 Keep these consistent:
@@ -278,9 +294,9 @@ Keep these consistent:
 
 | Method | Route | Auth | Purpose |
 |---|---|---:|---|
-| GET | `/v1/onboarding/options` | No | Return goal options + enums |
-| GET | `/v1/onboarding/me` | Yes | Get current user onboarding data |
-| PUT | `/v1/onboarding/me` | Yes | Upsert goals + profile |
+| GET | `/api/v1/onboarding/options` | No | Return goal options + enums |
+| GET | `/api/v1/onboarding/me` | Yes | Get current user onboarding data |
+| PUT | `/api/v1/onboarding/me` | Yes | Upsert goals + profile |
 
 ### Payload design
 Use one submission payload to keep onboarding simple:
@@ -309,12 +325,12 @@ Use one submission payload to keep onboarding simple:
 
 | Method | Route | Auth | Purpose |
 |---|---|---:|---|
-| GET | `/v1/portfolios` | Yes | List curated portfolios |
-| GET | `/v1/portfolios/:portfolioId` | Yes | Portfolio detail |
-| GET | `/v1/portfolios/:portfolioId/holdings` | Yes | Portfolio holdings |
-| POST | `/v1/households/:householdId/portfolio-positions` | Yes | Select/invest in a portfolio |
-| GET | `/v1/households/:householdId/portfolio-positions` | Yes | User’s portfolio positions |
-| GET | `/v1/households/:householdId/portfolio-snapshots` | Yes | Chart data (range param) |
+| GET | `/api/v1/portfolios` | Yes | List curated portfolios |
+| GET | `/api/v1/portfolios/:portfolioId` | Yes | Portfolio detail |
+| GET | `/api/v1/portfolios/:portfolioId/holdings` | Yes | Portfolio holdings |
+| POST | `/api/v1/households/:householdId/portfolio-positions` | Yes | Select/invest in a portfolio |
+| GET | `/api/v1/households/:householdId/portfolio-positions` | Yes | User’s portfolio positions |
+| GET | `/api/v1/households/:householdId/portfolio-snapshots` | Yes | Chart data (range param) |
 
 ### Chart ranges
 Use a small enum for the chart buttons you showed:
@@ -340,9 +356,9 @@ For the demo:
 
 | Method | Route | Auth | Purpose |
 |---|---|---:|---|
-| POST | `/v1/referrals/me` | Yes | Get-or-create referral code |
-| GET | `/v1/referrals/me` | Yes | Stats for current user |
-| POST | `/v1/referrals/:code/events` | No | Log click/signup/complete |
+| POST | `/api/v1/referrals/me` | Yes | Get-or-create referral code |
+| GET | `/api/v1/referrals/me` | Yes | Stats for current user |
+| POST | `/api/v1/referrals/:code/events` | No | Log click/signup/complete |
 
 ### Attribution strategy (simple)
 Because the schema doesn’t include a dedicated attribution table, use `ReferralEvent.meta` to store:
@@ -370,11 +386,11 @@ Example `signup` event:
 
 | Method | Route | Auth | Purpose |
 |---|---|---:|---|
-| GET | `/v1/assistant/threads` | Yes | List threads |
-| POST | `/v1/assistant/threads` | Yes | Create thread |
-| GET | `/v1/assistant/threads/:threadId` | Yes | Thread detail |
-| GET | `/v1/assistant/threads/:threadId/messages` | Yes | Paginated messages |
-| POST | `/v1/assistant/threads/:threadId/messages` | Yes | Add user message and generate reply |
+| GET | `/api/v1/assistant/threads` | Yes | List threads |
+| POST | `/api/v1/assistant/threads` | Yes | Create thread |
+| GET | `/api/v1/assistant/threads/:threadId` | Yes | Thread detail |
+| GET | `/api/v1/assistant/threads/:threadId/messages` | Yes | Paginated messages |
+| POST | `/api/v1/assistant/threads/:threadId/messages` | Yes | Add user message and generate reply |
 
 ### Implementation note
 Hide the model provider behind an interface:
@@ -392,9 +408,9 @@ Your schema includes `Advisor`, `AdvisorSlot`, `AdvisorAppointment`. If you want
 
 | Method | Route | Auth | Purpose |
 |---|---|---:|---|
-| GET | `/v1/advisors` | Yes | List advisors |
-| GET | `/v1/advisors/:advisorId/slots` | Yes | Available slots |
-| POST | `/v1/advisor-appointments` | Yes | Book appointment |
+| GET | `/api/v1/advisors` | Yes | List advisors |
+| GET | `/api/v1/advisors/:advisorId/slots` | Yes | Available slots |
+| POST | `/api/v1/advisor-appointments` | Yes | Book appointment |
 
 ---
 
@@ -434,9 +450,9 @@ Include:
 
 ### Rate limiting
 - Aggressive limits on:
-  - `/auth/email/start`
-  - `/referrals/:code/events`
-  - `/households/:id/invites`
+  - `/api/v1/auth/email/start`
+  - `/api/v1/referrals/:code/events`
+  - `/api/v1/households/:id/invites`
 
 ### Error handling
 - Central error middleware.
@@ -446,12 +462,36 @@ Include:
 
 ## Local development
 
+### Quick start (from repo root)
+1) Start Postgres:
+   - `docker compose -f alooola-mini/infra/docker-compose.yml up -d`
+2) Create `alooola-mini/services/api/.env`:
+   ```
+   DATABASE_URL=postgresql://alooola:alooola_dev@localhost:5432/alooola_mini?schema=public
+   JWT_ACCESS_SECRET=dev_access_secret
+   JWT_REFRESH_SECRET=dev_refresh_secret
+   APP_BASE_URL=http://localhost:3000
+   MOBILE_DEEPLINK_BASE=alooolamini://
+   EMAIL_PROVIDER=console
+   EMAIL_FROM=noreply@alooola.local
+   PORT=4000
+   ```
+3) Generate Prisma client + seed:
+   - `npm run db:generate`
+   - `npm run db:seed`
+4) Start the API:
+   - `npm run -w @alooola/api dev`
+5) Health check:
+   - `curl http://localhost:4000/api/v1/health`
+
 ### Run Postgres
-Use docker-compose (recommended) and set `DATABASE_URL`.
+Use docker-compose (recommended) and set `DATABASE_URL`. If port `5432` is in use, stop the other Postgres instance or change the host port in `alooola-mini/infra/docker-compose.yml`.
 
 ### Prisma
-- `prisma migrate dev`
-- `prisma db seed`
+- Prisma 7 reads `DATABASE_URL` from `alooola-mini/services/api/prisma.config.ts`.
+- Use workspace scripts from the repo root:
+  - `npm run db:migrate`
+  - `npm run db:seed`
 
 ### Seed data
 Seed enough data to demo immediately:
@@ -467,11 +507,10 @@ Seed enough data to demo immediately:
 
 ## What to implement first (fastest demo path)
 
-1) **Auth: email verification** (`/auth/email/start`, `/auth/email/verify`)
-2) **Household create + invite** (`/households`, `/households/:id/invites`, `/invites/:token/accept`)
-3) **Spending feed** (`/households/:id/transactions` + PATCH)
-4) **Onboarding** (`/onboarding/options`, `/onboarding/me`)
-5) **Discover portfolios** (`/portfolios`, holdings, snapshots)
-6) **Referrals** (code + events + stats)
-7) **Ask AI** (thread + messages)
-
+1) **Auth: email verification** (`/api/v1/auth/email/start`, `/api/v1/auth/email/verify`)
+2) **Household create + invite** (`/api/v1/households`, `/api/v1/households/:id/invites`, `/api/v1/invites/:token/accept`)
+3) **Spending feed** (`/api/v1/households/:id/transactions` + PATCH)
+4) **Onboarding** (`/api/v1/onboarding/options`, `/api/v1/onboarding/me`)
+5) **Discover portfolios** (`/api/v1/portfolios`, holdings, snapshots)
+6) **Referrals** (`/api/v1/referrals` code + events + stats)
+7) **Ask AI** (`/api/v1/assistant` threads + messages)
