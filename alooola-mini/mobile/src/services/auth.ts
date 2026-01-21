@@ -11,7 +11,7 @@ interface AuthResponse {
   needsOnboarding?: boolean;
 }
 
-interface EmailStartResponse {
+interface RegisterResponse {
   sent: boolean;
   isNewUser?: boolean;
 }
@@ -29,19 +29,18 @@ export async function demoLogin(name?: string, email?: string): Promise<AuthResp
 }
 
 /**
- * Start email verification flow.
+ * Register with email + password.
  * Sends a verification code to the email address.
- * @param mode - "login" requires existing account, "signup" creates new account
- * @param name - optional name for signup (collected during account creation)
+ * @param name - name for signup (collected during account creation)
  * @param referralCode - optional referral code for signup
  */
-export async function startEmailVerification(
+export async function registerWithPassword(
   email: string,
-  mode: 'login' | 'signup' = 'login',
-  name?: string,
+  password: string,
+  name: string,
   referralCode?: string
-): Promise<EmailStartResponse> {
-  return apiPost<EmailStartResponse>('/auth/email/start', { email, mode, name, referralCode });
+): Promise<RegisterResponse> {
+  return apiPost<RegisterResponse>('/auth/register', { email, password, name, referralCode });
 }
 
 interface ValidateReferralResponse {
@@ -57,11 +56,17 @@ export async function validateReferralCode(code: string): Promise<ValidateReferr
 }
 
 /**
- * Verify email with token.
- * Returns user and tokens if successful.
+ * Verify email with token. Returns user and tokens if successful.
  */
 export async function verifyEmailToken(email: string, token: string): Promise<AuthResponse> {
   return apiPost<AuthResponse>('/auth/email/verify', { email, token });
+}
+
+/**
+ * Login with email + password.
+ */
+export async function loginWithPassword(email: string, password: string): Promise<AuthResponse> {
+  return apiPost<AuthResponse>('/auth/login', { email, password });
 }
 
 /**

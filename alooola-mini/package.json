@@ -21,6 +21,8 @@
   "engines": {
     "node": ">=20.19.4"
   },
-  "packageManager": "npm@10.8.2"
+  "packageManager": "npm@10.8.2",
+  "dependencies": {
+    "expo-local-authentication": "~17.0.8"
+  }
 }
-

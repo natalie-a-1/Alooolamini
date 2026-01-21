@@ -62,7 +62,7 @@ Cursor format recommendation:
 
 ### Idempotency
 Support `Idempotency-Key` header on create endpoints that might be retried from mobile:
-- `POST /api/v1/auth/email/start`
+- `POST /api/v1/auth/register`
 - `POST /api/v1/households/:id/invites`
 - `POST /api/v1/referrals/:code/events`
 
@@ -177,20 +177,22 @@ RATE_LIMIT_ENABLED=true
 - `RefreshToken` (optional but matches your schema)
 
 ### Flow: email verification (magic link or code)
-1) User enters email.
-2) API creates/looks up user.
+1) User registers with email + password (and name).
+2) API creates user + password hash.
 3) API creates an `EmailVerification` record with a **hashed token**.
 4) API sends email:
    - Magic link: `APP_BASE_URL/verify-email?token=...` (web) or direct deep link.
    - Code: `123456` (simpler to demo live).
 5) App calls verify endpoint.
 6) API marks `verifiedAt` and issues tokens.
+7) Subsequent logins use `/auth/login` with email + password.
 
 ### Endpoints
 
 | Method | Route | Auth | Purpose |
 |---|---|---:|---|
-| POST | `/api/v1/auth/email/start` | No | Send verification link/code |
+| POST | `/api/v1/auth/register` | No | Register and send verification code |
+| POST | `/api/v1/auth/login` | No | Password login |
 | POST | `/api/v1/auth/email/verify` | No | Verify token/code, issue tokens |
 | POST | `/api/v1/auth/refresh` | No | Exchange refresh token for new access token |
 | POST | `/api/v1/auth/logout` | Yes | Revoke refresh token |
@@ -450,7 +452,7 @@ Include:
 
 ### Rate limiting
 - Aggressive limits on:
-  - `/api/v1/auth/email/start`
+  - `/api/v1/auth/register`
   - `/api/v1/referrals/:code/events`
   - `/api/v1/households/:id/invites`
 
@@ -507,7 +509,7 @@ Seed enough data to demo immediately:
 
 ## What to implement first (fastest demo path)
 
-1) **Auth: email verification** (`/api/v1/auth/email/start`, `/api/v1/auth/email/verify`)
+1) **Auth: register + login** (`/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/email/verify`)
 2) **Household create + invite** (`/api/v1/households`, `/api/v1/households/:id/invites`, `/api/v1/invites/:token/accept`)
 3) **Spending feed** (`/api/v1/households/:id/transactions` + PATCH)
 4) **Onboarding** (`/api/v1/onboarding/options`, `/api/v1/onboarding/me`)

@@ -34,8 +34,8 @@ function getLocalApiBaseUrl() {
 
 export const config = {
   // Optional override:
-  //   EXPO_PUBLIC_API_BASE_URL="http://192.168.1.79:4000/api/v1" npm run dev:mobile
+  //   EXPO_PUBLIC_API_BASE_URL="https://alooola-mini-api.onrender.com/api/v1" npm run dev:mobile
   apiBaseUrl:
     process.env.EXPO_PUBLIC_API_BASE_URL ??
-    (__DEV__ ? getLocalApiBaseUrl() : 'https://api.alooola.com/api/v1'),
+    (__DEV__ ? getLocalApiBaseUrl() : 'https://alooola-mini-api.onrender.com/api/v1'),
 };

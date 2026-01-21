@@ -7,18 +7,20 @@ import { createRateLimiter } from "../../middleware/rateLimit";
 import { requireAuth } from "../../middleware/auth";
 import {
   demoSchema,
-  emailStartSchema,
   emailVerifySchema,
+  loginSchema,
   logoutSchema,
+  registerSchema,
   refreshSchema,
   validateReferralSchema,
 } from "./auth.schemas";
 import {
   issueTokens,
+  loginWithPassword,
   refreshTokens,
+  registerWithPassword,
   revokeAllRefreshTokens,
   revokeRefreshToken,
-  startEmailVerification,
   validateReferralCode,
   verifyEmailToken,
 } from "./auth.service";
@@ -29,11 +31,29 @@ export const authRouter = Router();
 
 const emailLimiter = createRateLimiter(60 * 1000, 10);
 
-authRouter.post("/email/start", emailLimiter, validate(emailStartSchema), async (req, res, next) => {
+authRouter.post("/register", emailLimiter, validate(registerSchema), async (req, res, next) => {
   try {
-    const { email, mode, referralCode, name } = req.body;
-    const result = await startEmailVerification(email, mode, referralCode, name);
+    const { email, password, referralCode, name } = req.body;
+    const result = await registerWithPassword(email, password, name, referralCode);
     res.json({ data: { sent: true, isNewUser: result.isNewUser } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+authRouter.post("/login", validate(loginSchema), async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const meta = { userAgent: req.get("user-agent") ?? undefined, ipAddress: req.ip };
+    const result = await loginWithPassword(email, password, meta);
+    res.json({
+      data: {
+        user: result.user,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        needsOnboarding: result.needsOnboarding,
+      },
+    });
   } catch (err) {
     next(err);
   }

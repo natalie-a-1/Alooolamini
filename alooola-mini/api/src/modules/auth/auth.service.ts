@@ -4,7 +4,7 @@
 import jwt from "jsonwebtoken";
 import { prisma } from "../../db/prisma";
 import { env } from "../../config/env";
-import { generateToken, hashToken } from "../../lib/crypto";
+import { generateToken, hashPassword, hashToken, verifyPassword } from "../../lib/crypto";
 import { badRequest, unauthorized } from "../../lib/errors";
 import { sendEmail } from "../email/email.provider";
 
@@ -78,61 +78,24 @@ async function generateUniqueReferralCode() {
   return generateToken(6).toUpperCase();
 }
 
-/** Start email verification. */
-export async function startEmailVerification(email: string, mode: "login" | "signup" = "login", referralCode?: string, name?: string) {
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+async function ensureReferralCode(userId: string) {
+  const existing = await prisma.referral.findFirst({ where: { ownerUserId: userId } });
+  if (existing) return;
 
-  // For login mode, user must already exist
-  if (mode === "login" && !existingUser) {
-    throw badRequest("No account found with this email. Please sign up first.", "ACCOUNT_NOT_FOUND");
-  }
-
-  // For signup mode, warn if user already exists (they should login instead)
-  // But still allow it - they might have forgotten they have an account
-  const isNewUser = !existingUser;
-
-  // Validate referral code if provided
-  let referredByUserId: string | null = null;
-  if (referralCode && isNewUser) {
-    const referral = await prisma.referral.findUnique({
-      where: { code: referralCode.toUpperCase() },
-    });
-    if (referral) {
-      referredByUserId = referral.ownerUserId;
-      // Track the signup event
-      await prisma.referralEvent.create({
-        data: {
-          referralId: referral.id,
-          eventType: "signup",
-          meta: { email },
-        },
-      });
-    }
-  }
-
-  const user = existingUser ?? await prisma.user.create({ 
-    data: { 
-      email,
-      ...(name && { name }),
-      ...(referredByUserId && { referredByUserId }),
-    } 
+  const code = await generateUniqueReferralCode();
+  await prisma.referral.create({
+    data: { ownerUserId: userId, code },
   });
+}
 
-  // Generate referral code for new users
-  if (isNewUser) {
-    const code = await generateUniqueReferralCode();
-    await prisma.referral.create({
-      data: { ownerUserId: user.id, code },
-    });
-  }
-
+async function sendSignupVerificationEmail(userId: string, email: string) {
   const token = generateToken(20);
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + EMAIL_TOKEN_MINUTES * 60 * 1000);
 
   await prisma.emailVerification.create({
     data: {
-      userId: user.id,
+      userId,
       tokenHash,
       expiresAt,
     },
@@ -141,7 +104,7 @@ export async function startEmailVerification(email: string, mode: "login" | "sig
   const verifyLink = `${env.APP_BASE_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
   const deepLink = `${env.MOBILE_DEEPLINK_BASE}verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
-  const subject = mode === "signup" ? "Welcome to Alooola - Verify your email" : "Verify your Alooola login";
+  const subject = "Welcome to Alooola - Verify your email";
 
   await sendEmail({
     to: email,
@@ -153,6 +116,83 @@ export async function startEmailVerification(email: string, mode: "login" | "sig
       <p>Mobile: ${deepLink}</p>
     `,
   });
+}
+
+/** Register with email + password and send verification. */
+export async function registerWithPassword(email: string, password: string, name: string, referralCode?: string) {
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+    include: { auth: true },
+  });
+
+  if (existingUser?.auth) {
+    const verified = await prisma.emailVerification.findFirst({
+      where: { userId: existingUser.id, verifiedAt: { not: null } },
+    });
+
+    if (verified) {
+      throw badRequest("Account already exists. Please log in.", "ACCOUNT_EXISTS");
+    }
+
+    const passwordValid = await verifyPassword(password, existingUser.auth.passwordHash);
+    if (!passwordValid) {
+      throw badRequest("Account already exists. Please log in.", "ACCOUNT_EXISTS");
+    }
+
+    await sendSignupVerificationEmail(existingUser.id, existingUser.email);
+    return { userId: existingUser.id, isNewUser: false };
+  }
+
+  const isNewUser = !existingUser;
+
+  let referredByUserId: string | null = null;
+  if (referralCode && isNewUser) {
+    const referral = await prisma.referral.findUnique({
+      where: { code: referralCode.toUpperCase() },
+    });
+    if (referral) {
+      referredByUserId = referral.ownerUserId;
+      await prisma.referralEvent.create({
+        data: {
+          referralId: referral.id,
+          eventType: "signup",
+          meta: { email },
+        },
+      });
+    }
+  }
+
+  const user =
+    existingUser ??
+    (await prisma.user.create({
+      data: {
+        email,
+        name,
+        ...(referredByUserId && { referredByUserId }),
+      },
+    }));
+
+  if (existingUser && !existingUser.name && name) {
+    await prisma.user.update({
+      where: { id: existingUser.id },
+      data: { name },
+    });
+  }
+
+  const passwordHash = await hashPassword(password);
+  await prisma.userAuth.upsert({
+    where: { userId: user.id },
+    update: { passwordHash, passwordUpdatedAt: new Date() },
+    create: {
+      userId: user.id,
+      passwordHash,
+      passwordUpdatedAt: new Date(),
+      mfaEnabled: false,
+    },
+  });
+
+  await ensureReferralCode(user.id);
+  await sendSignupVerificationEmail(user.id, user.email);
 
   return { userId: user.id, isNewUser };
 }
@@ -195,6 +235,36 @@ export async function verifyEmailToken(email: string, token: string, meta?: { us
   const { investmentProfile, ...userWithoutProfile } = user;
   
   return { user: userWithoutProfile, tokens, needsOnboarding };
+}
+
+/** Login with email + password. */
+export async function loginWithPassword(email: string, password: string, meta?: { userAgent?: string; ipAddress?: string }) {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: { auth: true, investmentProfile: true },
+  });
+
+  if (!user || !user.auth) {
+    throw badRequest("Invalid email or password", "INVALID_CREDENTIALS");
+  }
+
+  const passwordValid = await verifyPassword(password, user.auth.passwordHash);
+  if (!passwordValid) {
+    throw badRequest("Invalid email or password", "INVALID_CREDENTIALS");
+  }
+
+  const verified = await prisma.emailVerification.findFirst({
+    where: { userId: user.id, verifiedAt: { not: null } },
+  });
+
+  if (!verified) {
+    throw badRequest("Please verify your email before logging in.", "EMAIL_NOT_VERIFIED");
+  }
+
+  const tokens = await issueTokens(user.id, user.email, meta);
+  const needsOnboarding = !user.name || !user.investmentProfile?.completedAt;
+  const { auth, investmentProfile, ...userWithoutProfile } = user;
+  return { user: userWithoutProfile, ...tokens, needsOnboarding };
 }
 
 /** Refresh tokens. */

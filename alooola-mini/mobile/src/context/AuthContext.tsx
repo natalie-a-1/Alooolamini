@@ -2,7 +2,9 @@
  * Authentication context for managing user auth state.
  */
 import React, { createContext, useCallback, useEffect, useState, type ReactNode } from 'react';
+import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
+import { refreshTokens } from '@/services/auth';
 
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
@@ -26,6 +28,7 @@ export interface AuthContextType {
   login: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => Promise<void>;
   getAccessToken: () => Promise<string | null>;
+  loginWithBiometrics: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -44,10 +47,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     async function loadAuthState() {
       try {
-        const [storedToken, storedUser] = await Promise.all([
+        const [storedToken, storedUser, storedRefreshToken] = await Promise.all([
           SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
           SecureStore.getItemAsync(USER_KEY),
+          SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
         ]);
+
+        const hasBiometrics = await LocalAuthentication.hasHardwareAsync();
+        const hasEnrollment = hasBiometrics ? await LocalAuthentication.isEnrolledAsync() : false;
+
+        if (storedRefreshToken && hasBiometrics && hasEnrollment) {
+          const unlocked = await loginWithBiometrics();
+          if (unlocked) {
+            return;
+          }
+        }
 
         if (storedToken && storedUser) {
           setAccessToken(storedToken);
@@ -61,7 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     loadAuthState();
-  }, []);
+  }, [loginWithBiometrics]);
 
   const login = useCallback(async (newUser: User, newAccessToken: string, refreshToken: string) => {
     try {
@@ -95,6 +109,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  const loginWithBiometrics = useCallback(async () => {
+    try {
+      const [hasHardware, isEnrolled, storedRefreshToken] = await Promise.all([
+        LocalAuthentication.hasHardwareAsync(),
+        LocalAuthentication.isEnrolledAsync(),
+        SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
+      ]);
+
+      if (!hasHardware || !isEnrolled || !storedRefreshToken) {
+        return false;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Log in with biometrics',
+        fallbackLabel: 'Use Passcode',
+        cancelLabel: 'Cancel',
+      });
+
+      if (!result.success) {
+        return false;
+      }
+
+      const refreshed = await refreshTokens(storedRefreshToken);
+      await login(refreshed.user, refreshed.accessToken, refreshed.refreshToken);
+
+      if (refreshed.needsOnboarding) {
+        setShowOnboarding(true);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Biometric login failed:', error);
+      return false;
+    }
+  }, [login, setShowOnboarding]);
+
   const getAccessToken = useCallback(async () => {
     // Return cached token if available
     if (accessToken) {
@@ -114,6 +164,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     getAccessToken,
+    loginWithBiometrics,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

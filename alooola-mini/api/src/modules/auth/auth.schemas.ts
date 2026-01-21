@@ -3,13 +3,23 @@
  */
 import { z } from "zod";
 
-/** Validation schema for email start. */
-export const emailStartSchema = z.object({
+/** Validation schema for register. */
+export const registerSchema = z.object({
   body: z.object({
-    email: z.string().email(),
-    mode: z.enum(["login", "signup"]).default("login"),
-    name: z.string().min(1).max(100).optional(),
+    email: z.string().trim().email(),
+    password: z.string().min(8),
+    name: z.string().min(1).max(100),
     referralCode: z.string().min(4).max(12).optional(),
+  }),
+  params: z.object({}).optional().default({}),
+  query: z.object({}).optional().default({}),
+});
+
+/** Validation schema for login. */
+export const loginSchema = z.object({
+  body: z.object({
+    email: z.string().trim().email(),
+    password: z.string().min(8),
   }),
   params: z.object({}).optional().default({}),
   query: z.object({}).optional().default({}),
@@ -27,7 +37,7 @@ export const validateReferralSchema = z.object({
 /** Validation schema for email verify. */
 export const emailVerifySchema = z.object({
   body: z.object({
-    email: z.string().email(),
+    email: z.string().trim().email(),
     token: z.string().min(6),
   }),
   params: z.object({}).optional().default({}),
@@ -55,7 +65,7 @@ export const logoutSchema = z.object({
 /** Validation schema for demo. */
 export const demoSchema = z.object({
   body: z.object({
-    email: z.string().email().optional(),
+    email: z.string().trim().email().optional(),
     name: z.string().min(1).optional(),
   }),
   params: z.object({}).optional().default({}),

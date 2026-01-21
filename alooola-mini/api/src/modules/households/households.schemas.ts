@@ -28,7 +28,7 @@ export const updateMemberSchema = z.object({
 /** Validation schema for create invite. */
 export const createInviteSchema = z.object({
   body: z.object({
-    email: z.string().email(),
+    email: z.string().trim().email(),
   }),
   params: z.object({
     householdId: z.string().uuid(),
@@ -39,7 +39,7 @@ export const createInviteSchema = z.object({
 /** Validation schema for accept invite. */
 export const acceptInviteSchema = z.object({
   body: z.object({
-    email: z.string().email().optional(),
+    email: z.string().trim().email().optional(),
   }),
   params: z.object({
     token: z.string().min(10),

@@ -15,6 +15,7 @@ import {
 } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
+import { hashPassword } from "../src/lib/crypto";
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -35,6 +36,7 @@ async function main() {
   const seedNow = new Date();
   const addDays = (date: Date, days: number) =>
     new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+  const seedPasswordHash = await hashPassword("Alooola123!");
 
   const goals = [
     { key: "retirement", label: "Retirement Planning" },
@@ -58,10 +60,10 @@ async function main() {
 
   await prisma.userAuth.upsert({
     where: { userId: primaryUser.id },
-    update: { passwordUpdatedAt: seedNow },
+    update: { passwordHash: seedPasswordHash, passwordUpdatedAt: seedNow },
     create: {
       userId: primaryUser.id,
-      passwordHash: "dev_hash_only_do_not_use",
+      passwordHash: seedPasswordHash,
       passwordUpdatedAt: seedNow,
       mfaEnabled: false,
     },

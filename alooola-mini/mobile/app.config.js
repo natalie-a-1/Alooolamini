@@ -15,6 +15,9 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.alooola.mini',
+      infoPlist: {
+        NSFaceIDUsageDescription: 'Allow Alooola to use Face ID to sign you in.',
+      },
     },
     android: {
       adaptiveIcon: {

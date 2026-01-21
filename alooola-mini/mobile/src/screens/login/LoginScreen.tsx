@@ -1,7 +1,7 @@
 /**
  * Login/register screen with API integration.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,24 +11,68 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/hooks/useAuth';
-import { demoLogin, startEmailVerification, verifyEmailToken } from '@/services/auth';
+import { demoLogin, loginWithPassword, registerWithPassword, verifyEmailToken } from '@/services/auth';
 import { ApiClientError } from '@/services/api';
 import { COLORS } from '@/theme/colors';
 import { styles } from './LoginScreen.styles';
 
+const REFRESH_TOKEN_KEY = 'refresh_token';
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
 export function LoginScreen() {
-  const { login, setShowOnboarding } = useAuth();
+  const { login, loginWithBiometrics, setShowOnboarding } = useAuth();
 
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [password, setPassword] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [showVerification, setShowVerification] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Use Biometrics');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [hasStoredRefreshToken, setHasStoredRefreshToken] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkBiometrics() {
+      try {
+        const [hasHardware, isEnrolled, types, storedRefresh] = await Promise.all([
+          LocalAuthentication.hasHardwareAsync(),
+          LocalAuthentication.isEnrolledAsync(),
+          LocalAuthentication.supportedAuthenticationTypesAsync(),
+          SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
+        ]);
+
+        if (!isMounted) return;
+
+        setBiometricAvailable(hasHardware && isEnrolled);
+        setHasStoredRefreshToken(!!storedRefresh);
+
+        if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+          setBiometricLabel('Use Face ID');
+        } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+          setBiometricLabel('Use Touch ID');
+        } else {
+          setBiometricLabel('Use Biometrics');
+        }
+      } catch (error) {
+        console.error('Failed to check biometrics:', error);
+      }
+    }
+
+    checkBiometrics();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleDemoLogin = async () => {
     setIsLoading(true);
@@ -43,45 +87,99 @@ export function LoginScreen() {
     }
   };
 
-  const handleEmailSubmit = async () => {
-    if (!email.trim()) {
+  const handleBiometricLogin = async () => {
+    setIsLoading(true);
+    try {
+      const success = await loginWithBiometrics();
+      if (!success) {
+        Alert.alert('Biometric Login Failed', 'Unable to log in with biometrics.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to login with biometrics.');
+      console.error('Biometric login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
       Alert.alert('Error', 'Please enter your email address');
       return;
     }
 
-    // Require name for signup
-    if (!isLogin && !name.trim()) {
-      Alert.alert('Error', 'Please enter your name');
+    if (!isValidEmail(trimmedEmail)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert('Error', 'Please enter your password');
       return;
     }
 
     setIsLoading(true);
     try {
-      const mode = isLogin ? 'login' : 'signup';
-      await startEmailVerification(
-        email, 
-        mode, 
-        isLogin ? undefined : name.trim(),
+      const result = await loginWithPassword(trimmedEmail, password);
+      await login(result.user, result.accessToken, result.refreshToken);
+
+      if (result.needsOnboarding) {
+        setShowOnboarding(true);
+      }
+    } catch (error) {
+      if (error instanceof ApiClientError && error.code === 'INVALID_CREDENTIALS') {
+        Alert.alert('Invalid Login', 'The email or password is incorrect.');
+      } else if (error instanceof ApiClientError && error.code === 'EMAIL_NOT_VERIFIED') {
+        Alert.alert('Verify your email', 'Please verify your email before logging in.');
+      } else {
+        Alert.alert('Error', 'Failed to log in. Please try again.');
+        console.error('Login error:', error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignup = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      Alert.alert('Error', 'Please enter your email address');
+      return;
+    }
+
+    if (!isValidEmail(trimmedEmail)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert('Error', 'Please create a password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await registerWithPassword(
+        trimmedEmail,
+        password,
+        name.trim(),
         referralCode.trim() || undefined
       );
       setShowVerification(true);
       Alert.alert('Check your email', 'We sent you a verification code');
     } catch (error) {
-      if (error instanceof ApiClientError && error.code === 'ACCOUNT_NOT_FOUND') {
-        Alert.alert(
-          'Account Not Found',
-          'No account exists with this email. Would you like to create one?',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Sign Up',
-              onPress: () => setIsLogin(false),
-            },
-          ]
-        );
+      if (error instanceof ApiClientError && error.code === 'ACCOUNT_EXISTS') {
+        Alert.alert('Account Exists', 'An account already exists. Please log in.');
+        setIsLogin(true);
       } else {
-        Alert.alert('Error', 'Failed to send verification email. Please try again.');
-        console.error('Email start error:', error);
+        Alert.alert('Error', 'Failed to create account. Please try again.');
+        console.error('Signup error:', error);
       }
     } finally {
       setIsLoading(false);
@@ -118,8 +216,10 @@ export function LoginScreen() {
   const handleSubmit = () => {
     if (showVerification) {
       handleVerifyCode();
+    } else if (isLogin) {
+      handleLogin();
     } else {
-      handleEmailSubmit();
+      handleSignup();
     }
   };
 
@@ -149,6 +249,23 @@ export function LoginScreen() {
           </>
         )}
       </Pressable>
+
+      {biometricAvailable && hasStoredRefreshToken && (
+        <Pressable
+          style={[styles.demoButton, isLoading && styles.buttonDisabled]}
+          onPress={handleBiometricLogin}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={COLORS.ink} />
+          ) : (
+            <>
+              <Icon name="shield" size={16} color={COLORS.ink} />
+              <Text style={styles.demoButtonText}>{biometricLabel}</Text>
+            </>
+          )}
+        </Pressable>
+      )}
 
       <View style={styles.divider}>
         <View style={styles.dividerLine} />
@@ -222,6 +339,23 @@ export function LoginScreen() {
             />
           </View>
         </View>
+      ) : null}
+
+      {!showVerification ? (
+        <View style={styles.inputCard}>
+          <View style={styles.inputRow}>
+            <Icon name="lock" size={16} color={COLORS.subtleInk} />
+            <TextInput
+              placeholder={isLogin ? 'Password' : 'Create Password'}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              style={styles.input}
+              placeholderTextColor={COLORS.subtleInk}
+            />
+          </View>
+        </View>
       ) : (
         <View style={styles.inputCard}>
           <View style={styles.inputRow}>
@@ -247,7 +381,7 @@ export function LoginScreen() {
           <ActivityIndicator color={COLORS.surface} />
         ) : (
           <Text style={styles.primaryButtonText}>
-            {showVerification ? 'Verify Code' : isLogin ? 'Send Code' : 'Get Started'}
+            {showVerification ? 'Verify Code' : isLogin ? 'Log In' : 'Create Account'}
           </Text>
         )}
       </Pressable>
