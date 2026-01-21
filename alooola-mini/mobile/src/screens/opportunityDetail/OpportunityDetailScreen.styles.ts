@@ -13,8 +13,8 @@ export const styles = StyleSheet.create({
     paddingBottom: SPACING.md,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     borderRadius: RADIUS.pill,
     backgroundColor: COLORS.surface,
     alignItems: 'center',
@@ -27,7 +27,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '600',
     color: COLORS.ink,
   },
@@ -35,11 +35,14 @@ export const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.subtleInk,
   },
+  keyboardAvoid: {
+    flex: 1,
+  },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: SPACING.xl,
+    paddingBottom: 1,
     gap: SPACING.md,
   },
   card: {
@@ -171,8 +174,12 @@ export const styles = StyleSheet.create({
     color: COLORS.mutedInk,
   },
   footer: {
-    paddingBottom: SPACING.xl,
+    paddingTop: SPACING.md,
+    paddingBottom: 0,
     gap: SPACING.md,
+    backgroundColor: COLORS.background,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
   amountCard: {
     backgroundColor: COLORS.surface,
@@ -183,6 +190,7 @@ export const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+    marginBottom: SPACING.xs,
   },
   amountLabel: {
     fontSize: 10,
@@ -204,6 +212,8 @@ export const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '300',
     color: COLORS.ink,
+    paddingVertical: 0,
+    minHeight: 24,
   },
   footerButtons: {
     flexDirection: 'row',
