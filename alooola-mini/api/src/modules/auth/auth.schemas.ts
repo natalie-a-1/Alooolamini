@@ -7,6 +7,18 @@ import { z } from "zod";
 export const emailStartSchema = z.object({
   body: z.object({
     email: z.string().email(),
+    mode: z.enum(["login", "signup"]).default("login"),
+    name: z.string().min(1).max(100).optional(),
+    referralCode: z.string().min(4).max(12).optional(),
+  }),
+  params: z.object({}).optional().default({}),
+  query: z.object({}).optional().default({}),
+});
+
+/** Validation schema for validating a referral code. */
+export const validateReferralSchema = z.object({
+  body: z.object({
+    code: z.string().min(4).max(12),
   }),
   params: z.object({}).optional().default({}),
   query: z.object({}).optional().default({}),

@@ -186,4 +186,47 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.mutedInk,
   },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.xl,
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: RADIUS.pill,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.ink,
+    marginBottom: SPACING.xs,
+  },
+  emptyText: {
+    fontSize: 12,
+    color: COLORS.mutedInk,
+    textAlign: 'center',
+    marginBottom: SPACING.lg,
+  },
+  emptyButton: {
+    backgroundColor: COLORS.ink,
+    borderRadius: RADIUS.pill,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+  },
+  emptyButtonText: {
+    color: COLORS.surface,
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });

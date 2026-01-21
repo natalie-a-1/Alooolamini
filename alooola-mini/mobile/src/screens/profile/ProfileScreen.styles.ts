@@ -45,6 +45,14 @@ export const styles = StyleSheet.create({
     height: 64,
     borderRadius: RADIUS.pill,
   },
+  profileImagePlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: RADIUS.pill,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   profileText: {
     flex: 1,
   },
@@ -133,6 +141,40 @@ export const styles = StyleSheet.create({
     borderTopColor: '#f3f4f6',
     paddingTop: SPACING.lg,
     gap: SPACING.md,
+  },
+  membersTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.subtleInk,
+    marginBottom: SPACING.xs,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  memberAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  memberAvatarPlaceholder: {
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.ink,
+  },
+  memberRole: {
+    fontSize: 11,
+    color: COLORS.subtleInk,
   },
   jointRow: {
     flexDirection: 'row',
@@ -309,5 +351,138 @@ export const styles = StyleSheet.create({
     color: COLORS.danger,
     fontSize: 12,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  emptyStateText: {
+    fontSize: 12,
+    color: COLORS.subtleInk,
+    textAlign: 'center',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  modalContent: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.md,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.ink,
+  },
+  modalClose: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalDescription: {
+    fontSize: 13,
+    color: COLORS.mutedInk,
+    marginBottom: SPACING.lg,
+    lineHeight: 20,
+  },
+  modalInputCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  modalInput: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.ink,
+    paddingVertical: SPACING.xs,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+  },
+  modalCancelText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.mutedInk,
+  },
+  modalSendButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    backgroundColor: COLORS.ink,
+  },
+  modalSendText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.surface,
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
+  },
+  modalDangerButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    backgroundColor: COLORS.danger,
+  },
+  modalDangerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.surface,
+  },
+  warningIconContainer: {
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  warningText: {
+    fontSize: 12,
+    color: COLORS.danger,
+    fontWeight: '500',
+    marginBottom: SPACING.lg,
+    textAlign: 'center',
+  },
+  toggleDisabled: {
+    opacity: 0.5,
+  },
+  toggleSpinner: {
+    marginLeft: 14,
   },
 });

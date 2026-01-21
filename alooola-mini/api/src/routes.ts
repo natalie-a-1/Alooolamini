@@ -13,6 +13,8 @@ import { referralsRouter } from "./modules/referrals/referrals.routes";
 import { assistantRouter } from "./modules/assistant/assistant.routes";
 import { advisorsRouter } from "./modules/advisors/advisors.routes";
 import { advisorAppointmentsRouter } from "./modules/advisors/advisor-appointments.routes";
+import { usersRouter } from "./modules/users/users.routes";
+import { notificationsRouter } from "./modules/notifications/notifications.routes";
 
 /** Router for api routes. */
 export const apiRouter = Router();
@@ -32,3 +34,5 @@ apiRouter.use("/referrals", referralsRouter);
 apiRouter.use("/assistant", assistantRouter);
 apiRouter.use("/advisors", advisorsRouter);
 apiRouter.use("/", advisorAppointmentsRouter);
+apiRouter.use("/users", usersRouter);
+apiRouter.use("/notifications", notificationsRouter);

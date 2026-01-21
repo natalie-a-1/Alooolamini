@@ -40,6 +40,7 @@ import {
   Car,
   Package,
   Circle,
+  X,
 } from 'lucide-react-native';
 
 import { COLORS } from '../theme/colors';
@@ -82,6 +83,7 @@ const ICONS = {
   users: Users,
   utensils: UtensilsCrossed,
   wallet: Wallet,
+  x: X,
 } as const satisfies Record<string, IconComponent>;
 
 export interface IconProps {

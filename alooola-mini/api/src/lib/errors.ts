@@ -15,8 +15,8 @@ export class ApiError extends Error {
 }
 
 /** Helper for bad request. */
-export function badRequest(message: string, details?: Record<string, unknown>) {
-  return new ApiError(400, "BAD_REQUEST", message, details);
+export function badRequest(message: string, code?: string, details?: Record<string, unknown>) {
+  return new ApiError(400, code ?? "BAD_REQUEST", message, details);
 }
 
 /** Helper for unauthorized. */

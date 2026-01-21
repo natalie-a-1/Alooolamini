@@ -11,25 +11,21 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/hooks/useAuth';
 import { demoLogin, startEmailVerification, verifyEmailToken } from '@/services/auth';
+import { ApiClientError } from '@/services/api';
 import { COLORS } from '@/theme/colors';
-import type { AuthStackParamList } from '@/navigation/types';
 import { styles } from './LoginScreen.styles';
 
-type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'LoginRegister'>;
-
 export function LoginScreen() {
-  const navigation = useNavigation<NavigationProp>();
   const { login, setShowOnboarding } = useAuth();
 
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [showVerification, setShowVerification] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,14 +49,40 @@ export function LoginScreen() {
       return;
     }
 
+    // Require name for signup
+    if (!isLogin && !name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await startEmailVerification(email);
+      const mode = isLogin ? 'login' : 'signup';
+      await startEmailVerification(
+        email, 
+        mode, 
+        isLogin ? undefined : name.trim(),
+        referralCode.trim() || undefined
+      );
       setShowVerification(true);
       Alert.alert('Check your email', 'We sent you a verification code');
     } catch (error) {
-      Alert.alert('Error', 'Failed to send verification email');
-      console.error('Email start error:', error);
+      if (error instanceof ApiClientError && error.code === 'ACCOUNT_NOT_FOUND') {
+        Alert.alert(
+          'Account Not Found',
+          'No account exists with this email. Would you like to create one?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Sign Up',
+              onPress: () => setIsLogin(false),
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to send verification email. Please try again.');
+        console.error('Email start error:', error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -77,14 +99,17 @@ export function LoginScreen() {
       const result = await verifyEmailToken(email, verificationCode);
       await login(result.user, result.accessToken, result.refreshToken);
 
-      // If signing up, go to onboarding
-      if (!isLogin) {
+      // Show onboarding if user hasn't completed profile setup
+      if (result.needsOnboarding) {
         setShowOnboarding(true);
-        navigation.navigate('Onboarding', { isNewUser: true });
       }
     } catch (error) {
-      Alert.alert('Error', 'Invalid verification code');
-      console.error('Verify error:', error);
+      if (error instanceof ApiClientError) {
+        Alert.alert('Invalid Code', 'The verification code is incorrect or has expired. Please try again.');
+      } else {
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+        console.error('Verify error:', error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -153,18 +178,33 @@ export function LoginScreen() {
       </View>
 
       {!isLogin && !showVerification && (
-        <View style={styles.inputCard}>
-          <View style={styles.inputRow}>
-            <Icon name="user" size={16} color={COLORS.subtleInk} />
-            <TextInput
-              placeholder="Full Name"
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-              placeholderTextColor={COLORS.subtleInk}
-            />
+        <>
+          <View style={styles.inputCard}>
+            <View style={styles.inputRow}>
+              <Icon name="user" size={16} color={COLORS.subtleInk} />
+              <TextInput
+                placeholder="Full Name"
+                value={name}
+                onChangeText={setName}
+                style={styles.input}
+                placeholderTextColor={COLORS.subtleInk}
+              />
+            </View>
           </View>
-        </View>
+          <View style={styles.inputCard}>
+            <View style={styles.inputRow}>
+              <Icon name="gift" size={16} color={COLORS.subtleInk} />
+              <TextInput
+                placeholder="Referral Code (optional)"
+                value={referralCode}
+                onChangeText={(text) => setReferralCode(text.toUpperCase())}
+                autoCapitalize="characters"
+                style={styles.input}
+                placeholderTextColor={COLORS.subtleInk}
+              />
+            </View>
+          </View>
+        </>
       )}
 
       {!showVerification ? (

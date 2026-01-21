@@ -11,6 +11,7 @@ import {
   emailVerifySchema,
   logoutSchema,
   refreshSchema,
+  validateReferralSchema,
 } from "./auth.schemas";
 import {
   issueTokens,
@@ -18,6 +19,7 @@ import {
   revokeAllRefreshTokens,
   revokeRefreshToken,
   startEmailVerification,
+  validateReferralCode,
   verifyEmailToken,
 } from "./auth.service";
 import { prisma } from "../../db/prisma";
@@ -30,9 +32,19 @@ const emailLimiter = createRateLimiter(60 * 1000, 10);
 
 authRouter.post("/email/start", emailLimiter, validate(emailStartSchema), async (req, res, next) => {
   try {
-    const { email } = req.body;
-    await startEmailVerification(email);
-    res.json({ data: { sent: true } });
+    const { email, mode, referralCode, name } = req.body;
+    const result = await startEmailVerification(email, mode, referralCode, name);
+    res.json({ data: { sent: true, isNewUser: result.isNewUser } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+authRouter.post("/referral/validate", validate(validateReferralSchema), async (req, res, next) => {
+  try {
+    const { code } = req.body;
+    const result = await validateReferralCode(code);
+    res.json({ data: result });
   } catch (err) {
     next(err);
   }
@@ -43,7 +55,7 @@ authRouter.post("/email/verify", validate(emailVerifySchema), async (req, res, n
     const { email, token } = req.body;
     const meta = { userAgent: req.get("user-agent") ?? undefined, ipAddress: req.ip };
     const result = await verifyEmailToken(email, token, meta);
-    res.json({ data: { user: result.user, ...result.tokens } });
+    res.json({ data: { user: result.user, ...result.tokens, needsOnboarding: result.needsOnboarding } });
   } catch (err) {
     next(err);
   }

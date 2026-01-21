@@ -49,6 +49,60 @@ export const styles = StyleSheet.create({
   list: {
     gap: SPACING.sm,
   },
+  inputCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.ink,
+    paddingVertical: SPACING.xs,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginVertical: SPACING.xl,
+  },
+  avatarPicker: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    overflow: 'hidden',
+    backgroundColor: COLORS.surface,
+    borderWidth: 3,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+  },
+  avatarPlaceholderText: {
+    fontSize: 12,
+    color: COLORS.subtleInk,
+  },
+  removeAvatar: {
+    marginTop: SPACING.md,
+  },
+  removeAvatarText: {
+    fontSize: 12,
+    color: COLORS.mutedInk,
+    textDecorationLine: 'underline',
+  },
   optionCard: {
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
@@ -199,5 +253,20 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.subtleInk,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.md,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.mutedInk,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#dc2626',
+    marginTop: SPACING.sm,
   },
 });

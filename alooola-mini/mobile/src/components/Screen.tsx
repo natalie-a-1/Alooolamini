@@ -42,7 +42,7 @@ export function Screen({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={[baseContentStyle, style]}>
+        <View style={[styles.container, baseContentStyle, contentContainerStyle]}>
           {children}
         </View>
       </KeyboardAvoidingView>

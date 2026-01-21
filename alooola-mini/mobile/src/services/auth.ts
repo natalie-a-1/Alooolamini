@@ -8,10 +8,12 @@ interface AuthResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+  needsOnboarding?: boolean;
 }
 
 interface EmailStartResponse {
   sent: boolean;
+  isNewUser?: boolean;
 }
 
 interface LogoutResponse {
@@ -29,9 +31,29 @@ export async function demoLogin(name?: string, email?: string): Promise<AuthResp
 /**
  * Start email verification flow.
  * Sends a verification code to the email address.
+ * @param mode - "login" requires existing account, "signup" creates new account
+ * @param name - optional name for signup (collected during account creation)
+ * @param referralCode - optional referral code for signup
  */
-export async function startEmailVerification(email: string): Promise<EmailStartResponse> {
-  return apiPost<EmailStartResponse>('/auth/email/start', { email });
+export async function startEmailVerification(
+  email: string,
+  mode: 'login' | 'signup' = 'login',
+  name?: string,
+  referralCode?: string
+): Promise<EmailStartResponse> {
+  return apiPost<EmailStartResponse>('/auth/email/start', { email, mode, name, referralCode });
+}
+
+interface ValidateReferralResponse {
+  valid: boolean;
+  referrerName: string | null;
+}
+
+/**
+ * Validate a referral code.
+ */
+export async function validateReferralCode(code: string): Promise<ValidateReferralResponse> {
+  return apiPost<ValidateReferralResponse>('/auth/referral/validate', { code });
 }
 
 /**

@@ -2,10 +2,11 @@
  * Route handlers for the households module.
  */
 import { Router } from "express";
+import { requireAuth } from "../../middleware/auth";
 import { optionalAuth } from "../../middleware/authOptional";
 import { validate } from "../../middleware/validate";
 import { acceptInviteSchema } from "./households.schemas";
-import { acceptInvite, getInvite } from "./households.service";
+import { acceptInvite, declineInvite, getInvite } from "./households.service";
 
 /** Router for invites routes. */
 export const invitesRouter = Router();
@@ -25,6 +26,15 @@ invitesRouter.post("/:token/accept", optionalAuth, validate(acceptInviteSchema),
       userId: req.user?.id,
       email: req.body.email,
     });
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+invitesRouter.post("/:token/decline", requireAuth, async (req, res, next) => {
+  try {
+    const result = await declineInvite(req.params.token, req.user!.id);
     res.json({ data: result });
   } catch (err) {
     next(err);

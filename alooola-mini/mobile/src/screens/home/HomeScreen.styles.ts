@@ -20,11 +20,26 @@ export const styles = StyleSheet.create({
   iconButton: {
     width: 40,
     height: 40,
-    borderRadius: RADIUS.pill,
-    borderWidth: 2,
-    borderColor: COLORS.ink,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: COLORS.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.surface,
   },
   loadingContainer: {
     flex: 1,
@@ -187,6 +202,68 @@ export const styles = StyleSheet.create({
   },
   insightText: {
     fontSize: 12,
+    color: COLORS.mutedInk,
+  },
+  gainTextNegative: {
+    color: COLORS.danger,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: SPACING.xxl,
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: RADIUS.pill,
+    backgroundColor: '#ede9fe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.ink,
+    marginBottom: SPACING.sm,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: COLORS.mutedInk,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.xxl,
+  },
+  ctaList: {
+    width: '100%',
+    gap: SPACING.sm,
+  },
+  ctaButton: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  ctaIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.pill,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaContent: {
+    flex: 1,
+  },
+  ctaTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.ink,
+  },
+  ctaText: {
+    fontSize: 11,
     color: COLORS.mutedInk,
   },
 });

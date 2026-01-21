@@ -60,9 +60,46 @@ export async function getHouseholdDetail(userId: string, householdId: string) {
 export async function listMembers(householdId: string) {
   return prisma.householdMember.findMany({
     where: { householdId },
-    include: { user: true },
+    include: { 
+      user: {
+        include: { profile: true }
+      }
+    },
     orderBy: { createdAt: "asc" },
   });
+}
+
+/** Remove a member from household (owner only). */
+export async function removeMember(householdId: string, memberId: string, requestingUserId: string) {
+  // Verify the requesting user is the owner
+  const requestingMembership = await prisma.householdMember.findFirst({
+    where: { householdId, userId: requestingUserId, role: "owner" },
+  });
+
+  if (!requestingMembership) {
+    throw badRequest("Only the owner can remove members");
+  }
+
+  // Find the member to remove
+  const memberToRemove = await prisma.householdMember.findUnique({
+    where: { id: memberId },
+  });
+
+  if (!memberToRemove || memberToRemove.householdId !== householdId) {
+    throw notFound("Member not found");
+  }
+
+  // Cannot remove yourself (owner) - use leave instead
+  if (memberToRemove.userId === requestingUserId) {
+    throw badRequest("Cannot remove yourself. Use leave household instead.");
+  }
+
+  // Delete the membership
+  await prisma.householdMember.delete({
+    where: { id: memberId },
+  });
+
+  return { success: true };
 }
 
 /** Update member. */
@@ -78,13 +115,23 @@ export async function updateMember(householdId: string, memberId: string, data: 
 }
 
 /** Create invite. */
-export async function createInvite(householdId: string, email: string) {
+export async function createInvite(householdId: string, email: string, inviterUserId: string) {
   const existing = await prisma.invite.findFirst({
     where: { householdId, email, status: "pending" },
   });
 
   if (existing) {
     throw conflict("Invite already exists");
+  }
+
+  // Get household and inviter info
+  const [household, inviter] = await Promise.all([
+    prisma.household.findUnique({ where: { id: householdId } }),
+    prisma.user.findUnique({ where: { id: inviterUserId }, include: { profile: true } }),
+  ]);
+
+  if (!household) {
+    throw notFound("Household not found");
   }
 
   const token = generateToken(24);
@@ -99,21 +146,103 @@ export async function createInvite(householdId: string, email: string) {
     include: { household: true },
   });
 
+  // Check if the invited email belongs to an existing user
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  const inviterName = inviter?.name || inviter?.email || "Someone";
+
+  if (existingUser) {
+    // Create an in-app notification for the existing user
+    await prisma.notification.create({
+      data: {
+        userId: existingUser.id,
+        type: "household_invite",
+        title: "Household Invite",
+        body: `${inviterName} invited you to join "${household.name}"`,
+        data: {
+          inviteId: invite.id,
+          inviteToken: invite.token,
+          householdId: household.id,
+          householdName: household.name,
+          inviterName,
+          inviterEmail: inviter?.email,
+        },
+      },
+    });
+  }
+
+  // Always send email as a backup (for users who may not check the app)
   const inviteLink = `${env.APP_BASE_URL}/invites/${invite.token}`;
   const deepLink = `${env.MOBILE_DEEPLINK_BASE}invites/${invite.token}`;
 
   await sendEmail({
     to: email,
     subject: `You're invited to ${invite.household.name}`,
-    text: `Accept invite: ${inviteLink} (mobile: ${deepLink})`,
+    text: `${inviterName} invited you to join "${household.name}". Accept invite: ${inviteLink} (mobile: ${deepLink})`,
     html: `
-      <p>You've been invited to join <strong>${invite.household.name}</strong>.</p>
+      <p><strong>${inviterName}</strong> invited you to join <strong>${household.name}</strong>.</p>
       <p><a href="${inviteLink}">Accept invite</a></p>
       <p>Mobile: ${deepLink}</p>
     `,
   });
 
-  return invite;
+  return { ...invite, existingUser: !!existingUser };
+}
+
+/** Leave household - removes user from household. */
+export async function leaveHousehold(userId: string, householdId: string) {
+  // Find the membership
+  const membership = await prisma.householdMember.findUnique({
+    where: {
+      householdId_userId: {
+        householdId,
+        userId,
+      },
+    },
+    include: {
+      household: {
+        include: {
+          members: true,
+        },
+      },
+    },
+  });
+
+  if (!membership) {
+    throw notFound("Membership not found");
+  }
+
+  // If user is the owner and there are other members, transfer ownership first
+  if (membership.role === "owner") {
+    const otherMembers = membership.household.members.filter(
+      (m) => m.userId !== userId && m.status === "accepted"
+    );
+    
+    if (otherMembers.length > 0) {
+      // Transfer ownership to another member
+      await prisma.householdMember.update({
+        where: { id: otherMembers[0].id },
+        data: { role: "owner" },
+      });
+    }
+  }
+
+  // Delete the membership
+  await prisma.householdMember.delete({
+    where: { id: membership.id },
+  });
+
+  // Check if household has any remaining members
+  const remainingMembers = await prisma.householdMember.count({
+    where: { householdId },
+  });
+
+  // If no members left, optionally delete the household
+  // For now, we'll keep the household (it may have transaction history, etc.)
+  
+  return { success: true, householdId };
 }
 
 /** Get invite. */
@@ -200,5 +329,63 @@ export async function acceptInvite(token: string, options: { userId?: string; em
     tokens = { accessToken: issued.accessToken, refreshToken: issued.refreshToken };
   }
 
+  // Mark any related notification as read
+  if (options.userId) {
+    await prisma.notification.updateMany({
+      where: {
+        userId: options.userId,
+        type: "household_invite",
+        data: {
+          path: ["inviteToken"],
+          equals: token,
+        },
+      },
+      data: { readAt: new Date() },
+    });
+  }
+
   return { invite, membership, tokens };
+}
+
+/** Decline an invite. */
+export async function declineInvite(token: string, userId: string) {
+  const invite = await prisma.invite.findUnique({
+    where: { token },
+    include: { household: true },
+  });
+
+  if (!invite) {
+    throw notFound("Invite not found");
+  }
+
+  if (invite.status !== "pending") {
+    throw badRequest("Invite is no longer pending");
+  }
+
+  // Verify the invite is for this user
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || user.email !== invite.email) {
+    throw badRequest("This invite is not for you");
+  }
+
+  // Update invite status to declined (using 'revoked' status since there's no 'declined')
+  await prisma.invite.update({
+    where: { id: invite.id },
+    data: { status: "revoked" },
+  });
+
+  // Mark any related notification as read
+  await prisma.notification.updateMany({
+    where: {
+      userId,
+      type: "household_invite",
+      data: {
+        path: ["inviteToken"],
+        equals: token,
+      },
+    },
+    data: { readAt: new Date() },
+  });
+
+  return { success: true, invite };
 }
