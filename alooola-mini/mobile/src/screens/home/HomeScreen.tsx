@@ -3,6 +3,8 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { MainTabScreenProps } from '@/navigation/types';
 import { Icon } from '@/components/Icon';
 import { NotificationsModal } from '@/components/NotificationsModal';
 import { Screen } from '@/components/Screen';
@@ -15,6 +17,7 @@ import { styles } from './HomeScreen.styles';
 import { TIMEFRAMES } from './HomeScreen.mock';
 
 export function HomeScreen() {
+  const navigation = useNavigation<MainTabScreenProps<'Home'>['navigation']>();
   const { user } = useAuth();
   const { household } = useHousehold();
   const [timeframe, setTimeframe] = useState('1M');
@@ -196,7 +199,10 @@ export function HomeScreen() {
           </Text>
           
           <View style={styles.ctaList}>
-            <Pressable style={styles.ctaButton}>
+            <Pressable 
+              style={styles.ctaButton}
+              onPress={() => navigation.navigate('Discover')}
+            >
               <View style={styles.ctaIcon}>
                 <Icon name="pieChart" size={16} color={COLORS.accentPurple} />
               </View>
@@ -218,7 +224,10 @@ export function HomeScreen() {
               <Icon name="chevronRight" size={16} color={COLORS.subtleInk} />
             </Pressable>
 
-            <Pressable style={styles.ctaButton}>
+            <Pressable 
+              style={styles.ctaButton}
+              onPress={() => navigation.navigate('Discover', { openAIChat: true })}
+            >
               <View style={styles.ctaIcon}>
                 <Icon name="messageCircle" size={16} color={COLORS.accentBlue} />
               </View>

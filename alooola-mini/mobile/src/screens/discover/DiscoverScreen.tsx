@@ -1,8 +1,11 @@
 /**
  * Discover screen and AI assistant flow.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+import type { MainTabScreenProps } from '@/navigation/types';
 import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
 import { OpportunityDetailScreen } from '@/screens/opportunityDetail';
@@ -19,8 +22,21 @@ import {
 } from './DiscoverScreen.mock';
 
 export function DiscoverScreen() {
+  const route = useRoute<MainTabScreenProps<'Discover'>['route']>();
+  const navigation = useNavigation<MainTabScreenProps<'Discover'>['navigation']>();
   const [showAIChat, setShowAIChat] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
+
+  // Check if we should open AI chat from navigation params when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      if (route.params?.openAIChat) {
+        setShowAIChat(true);
+        // Clear the param after opening
+        navigation.setParams({ openAIChat: undefined });
+      }
+    }, [route.params, navigation])
+  );
 
   if (showAIChat) {
     return <AIChat onClose={() => setShowAIChat(false)} />;
