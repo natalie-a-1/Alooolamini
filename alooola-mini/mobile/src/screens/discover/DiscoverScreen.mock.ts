@@ -1,16 +1,6 @@
 /**
- * Mock data and types for the Discover screen.
+ * Mock data for the Discover screen.
  */
-import type { CuratedPortfolio } from '@/services/portfolios';
-
-export interface Opportunity {
-  id: string; // UUID from database
-  name: string;
-  ticker: string;
-  return: string;
-  risk: string;
-  description?: string;
-}
 
 export const BORDER_ACCENTS = [
   { borderLeftColor: '#94a3b8' },
@@ -18,35 +8,6 @@ export const BORDER_ACCENTS = [
   { borderLeftColor: '#6b7280' },
   { borderLeftColor: '#78716c' },
 ];
-
-/**
- * Transform a CuratedPortfolio from the API to an Opportunity for display.
- */
-export function portfolioToOpportunity(portfolio: CuratedPortfolio): Opportunity {
-  // Get ticker symbols from holdings
-  const tickers = portfolio.holdings?.map(h => h.symbol).join(', ') || '';
-  
-  // Format return percentage
-  const returnPct = portfolio.oneYearReturnPct 
-    ? `${portfolio.oneYearReturnPct >= 0 ? '+' : ''}${Number(portfolio.oneYearReturnPct).toFixed(1)}%`
-    : 'N/A';
-  
-  // Format risk tolerance
-  const riskMap: Record<string, string> = {
-    conservative: 'Conservative',
-    moderate: 'Moderate',
-    aggressive: 'Aggressive',
-  };
-  
-  return {
-    id: portfolio.id,
-    name: portfolio.name,
-    ticker: tickers,
-    return: returnPct,
-    risk: riskMap[portfolio.riskTolerance] || portfolio.riskTolerance,
-    description: portfolio.description || undefined,
-  };
-}
 
 export const QUICK_ACTIONS = ['Portfolio recommendations', 'Tax strategies', 'Schedule with advisor'];
 
@@ -60,3 +21,66 @@ export const INITIAL_AI_MESSAGE = {
   text: 'Hi Dr. Morgan! How can I help you today?',
   time: 'Just now',
 };
+
+export const DEMO_MUTUAL_FUNDS = [
+  {
+    id: 'VFIAX',
+    symbol: 'VFIAX',
+    name: 'Vanguard 500 Index Fund Admiral Shares',
+    type: 'Mutual Fund',
+    region: 'United States',
+    marketOpen: '09:30',
+    marketClose: '16:00',
+    timezone: 'UTC-04',
+    currency: 'USD',
+    matchScore: null,
+  },
+  {
+    id: 'VTSAX',
+    symbol: 'VTSAX',
+    name: 'Vanguard Total Stock Market Index Fund Admiral Shares',
+    type: 'Mutual Fund',
+    region: 'United States',
+    marketOpen: '09:30',
+    marketClose: '16:00',
+    timezone: 'UTC-04',
+    currency: 'USD',
+    matchScore: null,
+  },
+  {
+    id: 'FXAIX',
+    symbol: 'FXAIX',
+    name: 'Fidelity 500 Index Fund',
+    type: 'Mutual Fund',
+    region: 'United States',
+    marketOpen: '09:30',
+    marketClose: '16:00',
+    timezone: 'UTC-04',
+    currency: 'USD',
+    matchScore: null,
+  },
+  {
+    id: 'FSKAX',
+    symbol: 'FSKAX',
+    name: 'Fidelity Total Market Index Fund',
+    type: 'Mutual Fund',
+    region: 'United States',
+    marketOpen: '09:30',
+    marketClose: '16:00',
+    timezone: 'UTC-04',
+    currency: 'USD',
+    matchScore: null,
+  },
+  {
+    id: 'SWPPX',
+    symbol: 'SWPPX',
+    name: 'Schwab S&P 500 Index Fund',
+    type: 'Mutual Fund',
+    region: 'United States',
+    marketOpen: '09:30',
+    marketClose: '16:00',
+    timezone: 'UTC-04',
+    currency: 'USD',
+    matchScore: null,
+  },
+];

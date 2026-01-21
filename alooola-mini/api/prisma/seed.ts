@@ -36,7 +36,10 @@ async function main() {
   const seedNow = new Date();
   const addDays = (date: Date, days: number) =>
     new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
-  const seedPasswordHash = await hashPassword("Alooola123!");
+  const seedPasswordHash = await hashPassword(process.env.DEMO_ACCOUNT_PASSWORD ?? "");
+  if (!seedPasswordHash) {
+    throw new Error("DEMO_ACCOUNT_PASSWORD is not set");
+  }
 
   const goals = [
     { key: "retirement", label: "Retirement Planning" },

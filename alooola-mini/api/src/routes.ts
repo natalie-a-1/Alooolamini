@@ -16,6 +16,7 @@ import { advisorAppointmentsRouter } from "./modules/advisors/advisor-appointmen
 import { usersRouter } from "./modules/users/users.routes";
 import { notificationsRouter } from "./modules/notifications/notifications.routes";
 import { watchlistRouter } from "./modules/watchlist/watchlist.routes";
+import { mutualFundsRouter } from "./modules/mutual-funds/mutual-funds.routes";
 
 /** Router for api routes. */
 export const apiRouter = Router();
@@ -38,3 +39,4 @@ apiRouter.use("/", advisorAppointmentsRouter);
 apiRouter.use("/users", usersRouter);
 apiRouter.use("/notifications", notificationsRouter);
 apiRouter.use("/", watchlistRouter);
+apiRouter.use("/mutual-funds", mutualFundsRouter);

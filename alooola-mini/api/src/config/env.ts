@@ -18,6 +18,7 @@ const envSchema = z.object({
   SMTP_PORT: z.string().optional().default("1025"),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+  ALPHA_VANTAGE_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

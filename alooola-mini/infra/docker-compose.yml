@@ -6,10 +6,12 @@ services:
     image: postgres:16
     container_name: alooola-mini-postgres
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: alooola
-      POSTGRES_PASSWORD: alooola_dev
-      POSTGRES_DB: alooola_mini
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:

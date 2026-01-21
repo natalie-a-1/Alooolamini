@@ -18,6 +18,8 @@ import { COLORS } from '@/theme/colors';
 import { styles } from './HomeScreen.styles';
 import { TIMEFRAMES } from './HomeScreen.mock';
 
+const PLACEHOLDER_BARS = Array.from({ length: 12 }, (_, index) => index);
+
 function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-US', {
     style: 'currency',
@@ -174,7 +176,11 @@ export function HomeScreen() {
   }, [timeframe]);
 
   const userName = user?.name?.split(' ')[0] || 'there';
-  const hasPortfolio = portfolio && portfolio.totalValue > 0;
+  const totalValue = portfolio?.totalValue ?? 0;
+  const hasPortfolio = totalValue > 0;
+  const insightMessage = hasPortfolio
+    ? `Hi ${userName}! Based on your portfolio, consider diversifying into healthcare sector investments for sector-aligned growth potential.`
+    : `Hi ${userName}! Once you start investing, we'll share personalized insights right here.`;
 
   return (
     <Screen>
@@ -196,11 +202,11 @@ export function HomeScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.ink} />
         </View>
-      ) : hasPortfolio ? (
+      ) : (
         <>
           <View style={styles.balanceBlock}>
             <Text style={styles.balanceValue}>
-              ${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
             <View style={styles.balanceGainRow}>
               <View style={[styles.gainIconCircle, timeframeGain.amount < 0 && styles.gainIconCircleNegative]}>
@@ -216,55 +222,70 @@ export function HomeScreen() {
             </View>
           </View>
 
-          {chartData.length > 0 && (
-            <View style={styles.card}>
-              {/* Tooltip for selected bar */}
-              {selectedSnapshot && (
-                <View style={styles.chartTooltip}>
-                  <Text style={styles.chartTooltipValue}>
-                    {formatCurrency(selectedSnapshot.totalValue)}
+          <View style={styles.card}>
+            {chartData.length > 0 ? (
+              <>
+                {/* Tooltip for selected bar */}
+                {selectedSnapshot && (
+                  <View style={styles.chartTooltip}>
+                    <Text style={styles.chartTooltipValue}>
+                      {formatCurrency(selectedSnapshot.totalValue)}
+                    </Text>
+                    <Text style={styles.chartTooltipDate}>
+                      {formatShortDate(selectedSnapshot.asOf)}
+                    </Text>
+                  </View>
+                )}
+                
+                <View style={styles.chartArea}>
+                  <View style={styles.chartBars}>
+                    {chartData.map((snapshot, index) => {
+                      const heightPct = valueRange === 0 ? 50 : ((snapshot.totalValue - minValue) / valueRange) * 100;
+                      const isSelected = selectedBarIndex === index;
+                      return (
+                        <Pressable
+                          key={`${snapshot.asOf}-${index}`}
+                          style={styles.chartBarWrapper}
+                          onPress={() => setSelectedBarIndex(isSelected ? null : index)}
+                        >
+                          <View
+                            style={[
+                              styles.chartBar,
+                              { height: `${Math.max(heightPct, 5)}%` },
+                              isSelected && styles.chartBarSelected,
+                            ]}
+                          />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+                
+                {/* Date range labels */}
+                <View style={styles.chartDateLabels}>
+                  <Text style={styles.chartDateLabel}>
+                    {formatShortDate(chartData[0].asOf)}
                   </Text>
-                  <Text style={styles.chartTooltipDate}>
-                    {formatShortDate(selectedSnapshot.asOf)}
+                  <Text style={styles.chartDateLabel}>
+                    {formatShortDate(chartData[chartData.length - 1].asOf)}
                   </Text>
                 </View>
-              )}
-              
-              <View style={styles.chartArea}>
-                <View style={styles.chartBars}>
-                  {chartData.map((snapshot, index) => {
-                    const heightPct = valueRange === 0 ? 50 : ((snapshot.totalValue - minValue) / valueRange) * 100;
-                    const isSelected = selectedBarIndex === index;
-                    return (
-                      <Pressable
-                        key={`${snapshot.asOf}-${index}`}
-                        style={styles.chartBarWrapper}
-                        onPress={() => setSelectedBarIndex(isSelected ? null : index)}
-                      >
-                        <View
-                          style={[
-                            styles.chartBar,
-                            { height: `${Math.max(heightPct, 5)}%` },
-                            isSelected && styles.chartBarSelected,
-                          ]}
-                        />
-                      </Pressable>
-                    );
-                  })}
+              </>
+            ) : (
+              <>
+                <View style={styles.chartArea}>
+                  <View style={styles.chartBars}>
+                    {PLACEHOLDER_BARS.map((index) => (
+                      <View key={`placeholder-${index}`} style={styles.chartBarWrapper}>
+                        <View style={[styles.chartBar, styles.chartBarPlaceholder]} />
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              </View>
-              
-              {/* Date range labels */}
-              <View style={styles.chartDateLabels}>
-                <Text style={styles.chartDateLabel}>
-                  {chartData.length > 0 ? formatShortDate(chartData[0].asOf) : ''}
-                </Text>
-                <Text style={styles.chartDateLabel}>
-                  {chartData.length > 0 ? formatShortDate(chartData[chartData.length - 1].asOf) : ''}
-                </Text>
-              </View>
-            </View>
-          )}
+                <Text style={styles.emptyChartText}>No performance data yet.</Text>
+              </>
+            )}
+          </View>
 
           <View style={styles.timeframeRow}>
             {TIMEFRAMES.map((tf) => (
@@ -291,8 +312,7 @@ export function HomeScreen() {
               <View style={styles.insightContent}>
                 <Text style={styles.cardTitle}>Personalized Insight</Text>
                 <Text style={styles.insightText}>
-                  Hi {userName}! Based on your portfolio, consider diversifying into healthcare sector
-                  investments for sector-aligned growth potential.
+                  {insightMessage}
                 </Text>
               </View>
             </View>
@@ -348,57 +368,6 @@ export function HomeScreen() {
             </View>
           )}
         </>
-      ) : (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}>
-            <Icon name="trendingUp" size={32} color={COLORS.accentPurple} />
-          </View>
-          <Text style={styles.emptyTitle}>Start Investing</Text>
-          <Text style={styles.emptyText}>
-            Hi {userName}! You haven't made your first investment yet. Let's get started building your wealth.
-          </Text>
-          
-          <View style={styles.ctaList}>
-            <Pressable 
-              style={styles.ctaButton}
-              onPress={() => navigation.navigate('Discover')}
-            >
-              <View style={styles.ctaIcon}>
-                <Icon name="pieChart" size={16} color={COLORS.accentPurple} />
-              </View>
-              <View style={styles.ctaContent}>
-                <Text style={styles.ctaTitle}>Explore Portfolios</Text>
-                <Text style={styles.ctaText}>Browse AI-curated investment options</Text>
-              </View>
-              <Icon name="chevronRight" size={16} color={COLORS.subtleInk} />
-            </Pressable>
-
-            <Pressable style={styles.ctaButton}>
-              <View style={styles.ctaIcon}>
-                <Icon name="dollarSign" size={16} color={COLORS.accentGreen} />
-              </View>
-              <View style={styles.ctaContent}>
-                <Text style={styles.ctaTitle}>Fund Your Account</Text>
-                <Text style={styles.ctaText}>Add funds to start investing</Text>
-              </View>
-              <Icon name="chevronRight" size={16} color={COLORS.subtleInk} />
-            </Pressable>
-
-            <Pressable 
-              style={styles.ctaButton}
-              onPress={() => navigation.navigate('Discover', { openAIChat: true })}
-            >
-              <View style={styles.ctaIcon}>
-                <Icon name="messageCircle" size={16} color={COLORS.accentBlue} />
-              </View>
-              <View style={styles.ctaContent}>
-                <Text style={styles.ctaTitle}>Talk to an Advisor</Text>
-                <Text style={styles.ctaText}>Get personalized guidance</Text>
-              </View>
-              <Icon name="chevronRight" size={16} color={COLORS.subtleInk} />
-            </Pressable>
-          </View>
-        </View>
       )}
 
       <NotificationsModal

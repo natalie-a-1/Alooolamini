@@ -144,6 +144,10 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.accentPurple,
     width: 6,
   },
+  chartBarPlaceholder: {
+    height: '22%',
+    backgroundColor: COLORS.border,
+  },
   chartTooltip: {
     alignItems: 'center',
     marginBottom: SPACING.md,
@@ -166,6 +170,12 @@ export const styles = StyleSheet.create({
   chartDateLabel: {
     fontSize: 10,
     color: COLORS.subtleInk,
+  },
+  emptyChartText: {
+    marginTop: SPACING.md,
+    fontSize: 12,
+    color: COLORS.mutedInk,
+    textAlign: 'center',
   },
   timeframeRow: {
     flexDirection: 'row',
