@@ -71,3 +71,12 @@ export const demoSchema = z.object({
   params: z.object({}).optional().default({}),
   query: z.object({}).optional().default({}),
 });
+
+/** Request body types inferred from schemas for consistent contracts. */
+export type RegisterBody = z.infer<typeof registerSchema>["body"];
+export type LoginBody = z.infer<typeof loginSchema>["body"];
+export type ValidateReferralBody = z.infer<typeof validateReferralSchema>["body"];
+export type EmailVerifyBody = z.infer<typeof emailVerifySchema>["body"];
+export type RefreshBody = z.infer<typeof refreshSchema>["body"];
+export type LogoutBody = z.infer<typeof logoutSchema>["body"];
+export type DemoBody = z.infer<typeof demoSchema>["body"];
