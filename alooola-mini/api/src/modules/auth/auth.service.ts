@@ -244,13 +244,17 @@ export async function loginWithPassword(email: string, password: string, meta?: 
     include: { auth: true, investmentProfile: true },
   });
 
-  if (!user || !user.auth) {
-    throw badRequest("Invalid email or password", "INVALID_CREDENTIALS");
+  if (!user) {
+    throw badRequest("Account not found. Please create an account.", "ACCOUNT_NOT_FOUND");
+  }
+
+  if (!user.auth) {
+    throw badRequest("Account not found. Please create an account.", "ACCOUNT_NOT_FOUND");
   }
 
   const passwordValid = await verifyPassword(password, user.auth.passwordHash);
   if (!passwordValid) {
-    throw badRequest("Invalid email or password", "INVALID_CREDENTIALS");
+    throw badRequest("Invalid password", "INVALID_PASSWORD");
   }
 
   const verified = await prisma.emailVerification.findFirst({

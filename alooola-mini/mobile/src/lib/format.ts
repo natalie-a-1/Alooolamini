@@ -25,3 +25,5 @@ export function formatTime(dateString: string): string {
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
   }
+
+export const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);

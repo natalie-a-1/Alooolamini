@@ -20,9 +20,9 @@ import { demoLogin, loginWithPassword, registerWithPassword, verifyEmailToken } 
 import { ApiClientError } from '@/services/api';
 import { COLORS } from '@/theme/colors';
 import { styles } from './LoginScreen.styles';
+import { isValidEmail } from '@/lib/format';
 
 const REFRESH_TOKEN_KEY = 'refresh_token';
-const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 export function LoginScreen() {
   const { login, loginWithBiometrics, setShowOnboarding } = useAuth();
@@ -128,7 +128,13 @@ export function LoginScreen() {
         setShowOnboarding(true);
       }
     } catch (error) {
-      if (error instanceof ApiClientError && error.code === 'INVALID_CREDENTIALS') {
+      if (error instanceof ApiClientError && error.code === 'ACCOUNT_NOT_FOUND') {
+        Alert.alert('Create an account', 'No account found for this email. Please sign up.');
+        setShowVerification(false);
+        setIsLogin(false);
+      } else if (error instanceof ApiClientError && error.code === 'INVALID_PASSWORD') {
+        Alert.alert('Invalid Login', 'The password is incorrect.');
+      } else if (error instanceof ApiClientError && error.code === 'INVALID_CREDENTIALS') {
         Alert.alert('Invalid Login', 'The email or password is incorrect.');
       } else if (error instanceof ApiClientError && error.code === 'EMAIL_NOT_VERIFIED') {
         Alert.alert('Verify your email', 'Please verify your email before logging in.');
