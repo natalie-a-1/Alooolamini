@@ -32,6 +32,9 @@ export async function sendResendEmail(payload: {
 
   if (!response.ok) {
     const text = await response.text();
-    throw badRequest("Resend API error", { status: response.status, text });
+    throw badRequest("Resend API error", "RESEND_API_ERROR", {
+      status: response.status,
+      text,
+    });
   }
 }

@@ -16,7 +16,7 @@ export function validate(schema: ZodSchema) {
 
     if (!result.success) {
       return next(
-        badRequest("Validation error", {
+        badRequest("Validation error", "VALIDATION_ERROR", {
           issues: result.error.flatten(),
         })
       );
