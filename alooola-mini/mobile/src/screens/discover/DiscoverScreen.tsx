@@ -1,13 +1,14 @@
 /**
  * Discover screen and AI assistant flow.
  */
-import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { MainTabScreenProps } from '@/navigation/types';
 import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
+import { getCuratedPortfolios } from '@/services/portfolios';
 import { OpportunityDetailScreen } from '@/screens/opportunityDetail';
 import { COLORS } from '@/theme/colors';
 import { styles } from './DiscoverScreen.styles';
@@ -16,8 +17,8 @@ import {
   AVAILABLE_TIMES,
   BORDER_ACCENTS,
   INITIAL_AI_MESSAGE,
-  MOCK_OPPORTUNITIES,
   type Opportunity,
+  portfolioToOpportunity,
   QUICK_ACTIONS,
 } from './DiscoverScreen.mock';
 
@@ -26,6 +27,25 @@ export function DiscoverScreen() {
   const navigation = useNavigation<MainTabScreenProps<'Discover'>['navigation']>();
   const [showAIChat, setShowAIChat] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load portfolios from API
+  const loadPortfolios = useCallback(async () => {
+    try {
+      const portfolios = await getCuratedPortfolios();
+      setOpportunities(portfolios.map(portfolioToOpportunity));
+    } catch (error) {
+      console.error('Failed to load portfolios:', error);
+      setOpportunities([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPortfolios();
+  }, [loadPortfolios]);
 
   // Check if we should open AI chat from navigation params when screen is focused
   useFocusEffect(
@@ -38,12 +58,17 @@ export function DiscoverScreen() {
     }, [route.params, navigation])
   );
 
+  // Refresh watchlist status when returning from detail
+  const handleBackFromDetail = useCallback(() => {
+    setSelectedOpportunity(null);
+  }, []);
+
   if (showAIChat) {
     return <AIChat onClose={() => setShowAIChat(false)} />;
   }
 
   if (selectedOpportunity) {
-    return <OpportunityDetailScreen opportunity={selectedOpportunity} onBack={() => setSelectedOpportunity(null)} />;
+    return <OpportunityDetailScreen opportunity={selectedOpportunity} onBack={handleBackFromDetail} />;
   }
 
   return (
@@ -65,35 +90,39 @@ export function DiscoverScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Curated Portfolios</Text>
-        <View style={styles.list}>
-          {MOCK_OPPORTUNITIES.map((opportunity, index) => (
-            <Pressable
-              key={opportunity.id}
-              onPress={() => setSelectedOpportunity(opportunity)}
-              style={[styles.opportunityCard, BORDER_ACCENTS[index % BORDER_ACCENTS.length]]}
-            >
-              <View style={styles.opportunityHeader}>
-                <View style={styles.opportunityText}>
-                  <Text style={styles.opportunityTitle}>{opportunity.name}</Text>
-                  <Text style={styles.opportunityTicker} numberOfLines={1}>
-                    {opportunity.ticker}
-                  </Text>
+        {isLoading ? (
+          <ActivityIndicator color={COLORS.ink} style={{ marginTop: 20 }} />
+        ) : (
+          <View style={styles.list}>
+            {opportunities.map((opportunity, index) => (
+              <Pressable
+                key={opportunity.id}
+                onPress={() => setSelectedOpportunity(opportunity)}
+                style={[styles.opportunityCard, BORDER_ACCENTS[index % BORDER_ACCENTS.length]]}
+              >
+                <View style={styles.opportunityHeader}>
+                  <View style={styles.opportunityText}>
+                    <Text style={styles.opportunityTitle}>{opportunity.name}</Text>
+                    <Text style={styles.opportunityTicker} numberOfLines={1}>
+                      {opportunity.ticker}
+                    </Text>
+                  </View>
+                  <Icon name="chevronRight" size={18} color={COLORS.subtleInk} />
                 </View>
-                <Icon name="chevronRight" size={18} color={COLORS.subtleInk} />
-              </View>
-              <View style={styles.opportunityMetaRow}>
-                <View>
-                  <Text style={styles.metaLabel}>1Y Return</Text>
-                  <Text style={styles.metaValuePositive}>{opportunity.return}</Text>
+                <View style={styles.opportunityMetaRow}>
+                  <View>
+                    <Text style={styles.metaLabel}>1Y Return</Text>
+                    <Text style={styles.metaValuePositive}>{opportunity.return}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.metaLabel}>Risk</Text>
+                    <Text style={styles.metaValue}>{opportunity.risk}</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.metaLabel}>Risk</Text>
-                  <Text style={styles.metaValue}>{opportunity.risk}</Text>
-                </View>
-              </View>
-            </Pressable>
-          ))}
-        </View>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </View>
     </Screen>
   );

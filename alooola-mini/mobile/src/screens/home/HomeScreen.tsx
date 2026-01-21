@@ -4,6 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { MainTabScreenProps } from '@/navigation/types';
 import { Icon } from '@/components/Icon';
 import { NotificationsModal } from '@/components/NotificationsModal';
@@ -12,9 +13,35 @@ import { useAuth } from '@/hooks/useAuth';
 import { useHousehold } from '@/hooks/useHousehold';
 import { getUnreadCount } from '@/services/notifications';
 import { getPortfolioSummary, type PortfolioSummary } from '@/services/portfolios';
+import { getWatchlist, type WatchlistItem } from '@/services/watchlist';
 import { COLORS } from '@/theme/colors';
 import { styles } from './HomeScreen.styles';
 import { TIMEFRAMES } from './HomeScreen.mock';
+
+function formatCurrency(amount: number): string {
+  return amount.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  });
+}
+
+function formatShortDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// Get the number of days for each timeframe
+function getTimeframeDays(tf: string): number {
+  switch (tf) {
+    case '1M': return 30;
+    case '3M': return 90;
+    case '6M': return 180;
+    case '1Y': return 365;
+    case 'ALL': return Infinity;
+    default: return 30;
+  }
+}
 
 export function HomeScreen() {
   const navigation = useNavigation<MainTabScreenProps<'Home'>['navigation']>();
@@ -23,12 +50,16 @@ export function HomeScreen() {
   const [timeframe, setTimeframe] = useState('1M');
   const [isLoading, setIsLoading] = useState(true);
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   
   // Notifications state
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
+  // Watchlist state
+  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
+
+  // Initial load - only on mount and household change
   const loadPortfolio = useCallback(async () => {
     if (!household?.id) {
       setIsLoading(false);
@@ -36,8 +67,8 @@ export function HomeScreen() {
     }
 
     try {
-      setError(null);
-      const data = await getPortfolioSummary(household.id);
+      // Fetch all data once, filter client-side
+      const data = await getPortfolioSummary(household.id, 'ALL');
       setPortfolio(data);
     } catch (err) {
       // No portfolio data is expected for new users
@@ -50,6 +81,11 @@ export function HomeScreen() {
   useEffect(() => {
     loadPortfolio();
   }, [loadPortfolio]);
+
+  // Reset selection when timeframe changes
+  useEffect(() => {
+    setSelectedBarIndex(null);
+  }, [timeframe]);
 
   // Load unread notification count
   const loadUnreadCount = useCallback(async () => {
@@ -65,21 +101,77 @@ export function HomeScreen() {
     loadUnreadCount();
   }, [loadUnreadCount]);
 
+  // Load watchlist items
+  const loadWatchlist = useCallback(async () => {
+    try {
+      const items = await getWatchlist();
+      setWatchlistItems(items);
+    } catch (error) {
+      console.error('Failed to load watchlist:', error);
+    }
+  }, []);
+
+  // Reload watchlist when screen comes into focus (e.g., after adding from Discover)
+  useFocusEffect(
+    useCallback(() => {
+      loadWatchlist();
+    }, [loadWatchlist])
+  );
+
   const handleNotificationsChange = useCallback(() => {
     loadUnreadCount();
   }, [loadUnreadCount]);
 
+  // Filter snapshots based on selected timeframe
   const chartData = useMemo(() => {
     if (!portfolio?.snapshots?.length) return [];
-    return portfolio.snapshots.map(s => s.totalValue);
-  }, [portfolio]);
+    
+    const days = getTimeframeDays(timeframe);
+    if (days === Infinity) {
+      return portfolio.snapshots;
+    }
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    
+    return portfolio.snapshots.filter(s => new Date(s.asOf) >= cutoffDate);
+  }, [portfolio, timeframe]);
 
-  const { minValue, range } = useMemo(() => {
-    if (!chartData.length) return { minValue: 0, range: 0 };
-    const maxValue = Math.max(...chartData);
-    const minValue = Math.min(...chartData);
-    return { minValue, range: maxValue - minValue };
+  const chartValues = useMemo(() => {
+    return chartData.map(s => s.totalValue);
   }, [chartData]);
+
+  const { minValue, valueRange } = useMemo(() => {
+    if (!chartValues.length) return { minValue: 0, valueRange: 0 };
+    const maxValue = Math.max(...chartValues);
+    const minValue = Math.min(...chartValues);
+    return { minValue, valueRange: maxValue - minValue };
+  }, [chartValues]);
+
+  // Get selected snapshot data for tooltip
+  const selectedSnapshot = selectedBarIndex !== null ? chartData[selectedBarIndex] : null;
+
+  // Calculate gain for the current timeframe view
+  const timeframeGain = useMemo(() => {
+    if (chartData.length < 2) return { amount: 0, percent: 0 };
+    const firstValue = chartData[0].totalValue;
+    const lastValue = chartData[chartData.length - 1].totalValue;
+    const amount = lastValue - firstValue;
+    const percent = firstValue > 0 ? (amount / firstValue) * 100 : 0;
+    return { amount, percent };
+  }, [chartData]);
+
+  // Get label for timeframe
+  const timeframeLabel = useMemo(() => {
+    switch (timeframe) {
+      case '1M': return 'past month';
+      case '3M': return 'past 3 months';
+      case '6M': return 'past 6 months';
+      case '1Y': return 'past year';
+      case 'ALL': return 'all time';
+      default: return 'all time';
+    }
+  }, [timeframe]);
 
   const userName = user?.name?.split(' ')[0] || 'there';
   const hasPortfolio = portfolio && portfolio.totalValue > 0;
@@ -111,43 +203,65 @@ export function HomeScreen() {
               ${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
             <View style={styles.balanceGainRow}>
-              <View style={styles.gainIconCircle}>
+              <View style={[styles.gainIconCircle, timeframeGain.amount < 0 && styles.gainIconCircleNegative]}>
                 <Icon 
-                  name={portfolio.gainAmount >= 0 ? 'trendingUp' : 'trendingDown'} 
+                  name={timeframeGain.amount >= 0 ? 'trendingUp' : 'trendingDown'} 
                   size={12} 
-                  color={portfolio.gainAmount >= 0 ? COLORS.success : COLORS.danger} 
+                  color={timeframeGain.amount >= 0 ? COLORS.success : COLORS.danger} 
                 />
               </View>
-              <Text style={[styles.gainText, portfolio.gainAmount < 0 && styles.gainTextNegative]}>
-                ${Math.abs(portfolio.gainAmount).toFixed(2)} · all time
+              <Text style={[styles.gainText, timeframeGain.amount < 0 && styles.gainTextNegative]}>
+                {timeframeGain.amount >= 0 ? '+' : '-'}${Math.abs(timeframeGain.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({timeframeGain.percent >= 0 ? '+' : ''}{timeframeGain.percent.toFixed(2)}%) · {timeframeLabel}
               </Text>
             </View>
           </View>
 
           {chartData.length > 0 && (
             <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardHeaderLeft}>
-                  <Text style={styles.cardMeta}>${portfolio.gainAmount.toLocaleString()} · all time</Text>
-                  <Text style={styles.cardTitle}>Portfolio value</Text>
-                  <Text style={styles.cardValue}>
-                    ${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              {/* Tooltip for selected bar */}
+              {selectedSnapshot && (
+                <View style={styles.chartTooltip}>
+                  <Text style={styles.chartTooltipValue}>
+                    {formatCurrency(selectedSnapshot.totalValue)}
+                  </Text>
+                  <Text style={styles.chartTooltipDate}>
+                    {formatShortDate(selectedSnapshot.asOf)}
                   </Text>
                 </View>
-              </View>
-
+              )}
+              
               <View style={styles.chartArea}>
                 <View style={styles.chartBars}>
-                  {chartData.map((value, index) => {
-                    const heightPct = range === 0 ? 50 : ((value - minValue) / range) * 100;
+                  {chartData.map((snapshot, index) => {
+                    const heightPct = valueRange === 0 ? 50 : ((snapshot.totalValue - minValue) / valueRange) * 100;
+                    const isSelected = selectedBarIndex === index;
                     return (
-                      <View key={`${value}-${index}`} style={styles.chartBarWrapper}>
-                        <View style={[styles.chartBar, { height: `${Math.max(heightPct, 5)}%` }]} />
-                      </View>
+                      <Pressable
+                        key={`${snapshot.asOf}-${index}`}
+                        style={styles.chartBarWrapper}
+                        onPress={() => setSelectedBarIndex(isSelected ? null : index)}
+                      >
+                        <View
+                          style={[
+                            styles.chartBar,
+                            { height: `${Math.max(heightPct, 5)}%` },
+                            isSelected && styles.chartBarSelected,
+                          ]}
+                        />
+                      </Pressable>
                     );
                   })}
                 </View>
-                <View style={styles.chartMidline} />
+              </View>
+              
+              {/* Date range labels */}
+              <View style={styles.chartDateLabels}>
+                <Text style={styles.chartDateLabel}>
+                  {chartData.length > 0 ? formatShortDate(chartData[0].asOf) : ''}
+                </Text>
+                <Text style={styles.chartDateLabel}>
+                  {chartData.length > 0 ? formatShortDate(chartData[chartData.length - 1].asOf) : ''}
+                </Text>
               </View>
             </View>
           )}
@@ -169,10 +283,6 @@ export function HomeScreen() {
             ))}
           </View>
 
-          <Pressable>
-            <Text style={styles.seeMore}>See More</Text>
-          </Pressable>
-
           <View style={[styles.card, styles.insightCard]}>
             <View style={styles.insightRow}>
               <View style={styles.aiBadge}>
@@ -187,6 +297,56 @@ export function HomeScreen() {
               </View>
             </View>
           </View>
+
+          {/* Watchlist Section */}
+          {watchlistItems.length > 0 && (
+            <View style={styles.watchlistSection}>
+              <Text style={styles.sectionTitle}>Your Watchlist</Text>
+              <View style={styles.watchlistList}>
+                {watchlistItems.slice(0, 3).map((item) => {
+                  const returnPct = item.portfolio.oneYearReturnPct 
+                    ? `${Number(item.portfolio.oneYearReturnPct) >= 0 ? '+' : ''}${Number(item.portfolio.oneYearReturnPct).toFixed(1)}%`
+                    : 'N/A';
+                  return (
+                    <Pressable 
+                      key={item.id} 
+                      style={styles.watchlistItem}
+                      onPress={() => navigation.navigate('Discover')}
+                    >
+                      <View style={styles.watchlistItemLeft}>
+                        <Text style={styles.watchlistItemName} numberOfLines={1}>
+                          {item.portfolio.name}
+                        </Text>
+                        <Text style={styles.watchlistItemRisk}>
+                          {item.portfolio.riskTolerance.charAt(0).toUpperCase() + item.portfolio.riskTolerance.slice(1)}
+                        </Text>
+                      </View>
+                      <View style={styles.watchlistItemRight}>
+                        <Text style={[
+                          styles.watchlistItemReturn,
+                          Number(item.portfolio.oneYearReturnPct) >= 0 ? styles.returnPositive : styles.returnNegative
+                        ]}>
+                          {returnPct}
+                        </Text>
+                        <Text style={styles.watchlistItemLabel}>1Y</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {watchlistItems.length > 3 && (
+                <Pressable 
+                  style={styles.watchlistViewAll}
+                  onPress={() => navigation.navigate('Discover')}
+                >
+                  <Text style={styles.watchlistViewAllText}>
+                    View all {watchlistItems.length} items
+                  </Text>
+                  <Icon name="chevronRight" size={14} color={COLORS.mutedInk} />
+                </Pressable>
+              )}
+            </View>
+          )}
         </>
       ) : (
         <View style={styles.emptyState}>

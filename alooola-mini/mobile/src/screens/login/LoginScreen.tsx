@@ -33,10 +33,10 @@ export function LoginScreen() {
   const handleDemoLogin = async () => {
     setIsLoading(true);
     try {
-      const result = await demoLogin('Demo User');
+      const result = await demoLogin();
       await login(result.user, result.accessToken, result.refreshToken);
     } catch (error) {
-      Alert.alert('Error', 'Failed to create demo account. Is the API running?');
+      Alert.alert('Error', 'Failed to login to demo account. Is the API running and seeded?');
       console.error('Demo login error:', error);
     } finally {
       setIsLoading(false);

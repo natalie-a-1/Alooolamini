@@ -17,6 +17,18 @@ export const accountDetailSchema = z.object({
   query: z.object({}).optional().default({}),
 });
 
+/** Validation schema for create account. */
+export const createAccountSchema = z.object({
+  body: z.object({
+    name: z.string().min(1).max(100),
+    type: z.enum(["checking", "savings", "investment", "credit"]),
+    institution: z.string().max(100).optional(),
+    last4: z.string().length(4).optional(),
+  }),
+  params: z.object({ householdId: z.string().uuid() }),
+  query: z.object({}).optional().default({}),
+});
+
 /** Validation schema for list categories. */
 export const listCategoriesSchema = z.object({
   body: z.object({}).optional().default({}),
@@ -66,4 +78,13 @@ export const patchTransactionSchema = z.object({
   }),
   params: z.object({ transactionId: z.string().uuid() }),
   query: z.object({}).optional().default({}),
+});
+
+/** Validation schema for spending summary. */
+export const spendingSummarySchema = z.object({
+  body: z.object({}).optional().default({}),
+  params: z.object({ householdId: z.string().uuid() }),
+  query: z.object({
+    period: z.string().optional(),
+  }).optional().default({}),
 });

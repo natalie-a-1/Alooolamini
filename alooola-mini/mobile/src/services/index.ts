@@ -9,3 +9,4 @@ export * from './portfolios';
 export * from './spending';
 export * from './user';
 export * from './advisors';
+export * from './watchlist';

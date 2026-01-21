@@ -7,16 +7,20 @@ import { requireHouseholdRole } from "../../middleware/requireHouseholdRole";
 import { validate } from "../../middleware/validate";
 import {
   accountDetailSchema,
+  createAccountSchema,
   createCategorySchema,
   listAccountsSchema,
   listCategoriesSchema,
   listTransactionsSchema,
   patchTransactionSchema,
+  spendingSummarySchema,
   transactionDetailSchema,
 } from "./spending.schemas";
 import {
+  createAccount,
   createCategory,
   getAccount,
+  getSpendingSummary,
   getTransaction,
   listAccounts,
   listCategories,
@@ -36,6 +40,21 @@ spendingRouter.get(
     try {
       const accounts = await listAccounts(req.params.householdId);
       res.json({ data: accounts });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+spendingRouter.post(
+  "/households/:householdId/accounts",
+  requireAuth,
+  requireHouseholdRole(["owner", "member"]),
+  validate(createAccountSchema),
+  async (req, res, next) => {
+    try {
+      const account = await createAccount(req.params.householdId, req.body);
+      res.status(201).json({ data: account });
     } catch (err) {
       next(err);
     }
@@ -82,6 +101,22 @@ spendingRouter.post(
 );
 
 spendingRouter.get(
+  "/households/:householdId/spending",
+  requireAuth,
+  requireHouseholdRole(["owner", "member", "viewer"]),
+  validate(spendingSummarySchema),
+  async (req, res, next) => {
+    try {
+      const period = typeof req.query.period === "string" ? req.query.period : undefined;
+      const summary = await getSpendingSummary(req.params.householdId, period);
+      res.json({ data: summary });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+spendingRouter.get(
   "/households/:householdId/transactions",
   requireAuth,
   requireHouseholdRole(["owner", "member", "viewer"]),
@@ -89,7 +124,7 @@ spendingRouter.get(
   async (req, res, next) => {
     try {
       const result = await listTransactions(req.params.householdId, req.query);
-      res.json({ data: result.items, meta: { nextCursor: result.nextCursor, hasMore: result.hasMore } });
+      res.json({ data: { items: result.items, nextCursor: result.nextCursor, hasMore: result.hasMore } });
     } catch (err) {
       next(err);
     }

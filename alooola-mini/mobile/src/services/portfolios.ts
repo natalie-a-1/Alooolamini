@@ -26,10 +26,8 @@ export interface PortfolioSummary {
 }
 
 export interface PortfolioSnapshot {
-  id: string;
   totalValue: number;
   gainAmount: number | null;
-  gainPercent: number | null;
   asOf: string;
 }
 
@@ -49,7 +47,9 @@ export async function getPortfolio(id: string): Promise<CuratedPortfolio> {
 
 /**
  * Get portfolio summary for a household.
+ * @param range - Optional time range: '1M', '3M', '6M', '1Y', or 'ALL'
  */
-export async function getPortfolioSummary(householdId: string): Promise<PortfolioSummary> {
-  return apiGet<PortfolioSummary>(`/households/${householdId}/portfolio-summary`);
+export async function getPortfolioSummary(householdId: string, range?: string): Promise<PortfolioSummary> {
+  const params = range ? `?range=${range}` : '';
+  return apiGet<PortfolioSummary>(`/households/${householdId}/portfolio-summary${params}`);
 }

@@ -1,13 +1,15 @@
 /**
  * Mock data and types for the Discover screen.
  */
+import type { CuratedPortfolio } from '@/services/portfolios';
 
 export interface Opportunity {
-  id: number;
+  id: string; // UUID from database
   name: string;
   ticker: string;
   return: string;
   risk: string;
+  description?: string;
 }
 
 export const BORDER_ACCENTS = [
@@ -17,36 +19,34 @@ export const BORDER_ACCENTS = [
   { borderLeftColor: '#78716c' },
 ];
 
-export const MOCK_OPPORTUNITIES: Opportunity[] = [
-  {
-    id: 1,
-    name: 'Healthcare REIT Portfolio',
-    ticker: 'MPW, WELL, DOC',
-    return: '+12.4%',
-    risk: 'Moderate',
-  },
-  {
-    id: 2,
-    name: 'Biotech Innovation Fund',
-    ticker: 'XBI',
-    return: '+18.7%',
-    risk: 'Aggressive',
-  },
-  {
-    id: 3,
-    name: 'Medical Technology',
-    ticker: 'MDT, ABT, SYK',
-    return: '+10.2%',
-    risk: 'Conservative',
-  },
-  {
-    id: 4,
-    name: 'Healthcare Leaders',
-    ticker: 'UNH, JNJ, CVS',
-    return: '+8.3%',
-    risk: 'Conservative',
-  },
-];
+/**
+ * Transform a CuratedPortfolio from the API to an Opportunity for display.
+ */
+export function portfolioToOpportunity(portfolio: CuratedPortfolio): Opportunity {
+  // Get ticker symbols from holdings
+  const tickers = portfolio.holdings?.map(h => h.symbol).join(', ') || '';
+  
+  // Format return percentage
+  const returnPct = portfolio.oneYearReturnPct 
+    ? `${portfolio.oneYearReturnPct >= 0 ? '+' : ''}${Number(portfolio.oneYearReturnPct).toFixed(1)}%`
+    : 'N/A';
+  
+  // Format risk tolerance
+  const riskMap: Record<string, string> = {
+    conservative: 'Conservative',
+    moderate: 'Moderate',
+    aggressive: 'Aggressive',
+  };
+  
+  return {
+    id: portfolio.id,
+    name: portfolio.name,
+    ticker: tickers,
+    return: returnPct,
+    risk: riskMap[portfolio.riskTolerance] || portfolio.riskTolerance,
+    description: portfolio.description || undefined,
+  };
+}
 
 export const QUICK_ACTIONS = ['Portfolio recommendations', 'Tax strategies', 'Schedule with advisor'];
 

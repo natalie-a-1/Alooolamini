@@ -23,6 +23,39 @@ export async function listAccounts(householdId: string) {
   });
 }
 
+/** Create account. */
+export async function createAccount(householdId: string, data: {
+  name: string;
+  type: string;
+  institution?: string;
+  last4?: string;
+}) {
+  const account = await prisma.account.create({
+    data: {
+      householdId,
+      name: data.name,
+      type: data.type,
+      institution: data.institution,
+      last4: data.last4,
+    },
+  });
+
+  // Create initial zero balance
+  await prisma.accountBalance.create({
+    data: {
+      accountId: account.id,
+      availableBalance: 0,
+      currentBalance: 0,
+      asOf: new Date(),
+    },
+  });
+
+  return prisma.account.findUnique({
+    where: { id: account.id },
+    include: { balance: true },
+  });
+}
+
 /** Get account. */
 export async function getAccount(userId: string, accountId: string) {
   const account = await prisma.account.findUnique({
@@ -140,4 +173,78 @@ export async function updateTransaction(userId: string, transactionId: string, d
     data,
     include: { account: true, category: true, attributedUser: true },
   });
+}
+
+/** Get spending summary for a household. */
+export async function getSpendingSummary(householdId: string, period?: string) {
+  // Calculate date range based on period
+  const now = new Date();
+  let startDate: Date;
+
+  switch (period) {
+    case "This Week":
+      // Start of current week (Sunday)
+      const dayOfWeek = now.getDay();
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+      break;
+    case "This Year":
+      startDate = new Date(now.getFullYear(), 0, 1);
+      break;
+    case "Last Month":
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      break;
+    case "Last 3 Months":
+      startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+      break;
+    case "This Month":
+    default:
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+  }
+
+  // Get all debit transactions in the period
+  const transactions = await prisma.transaction.findMany({
+    where: {
+      householdId,
+      txnType: "debit",
+      txnDate: { gte: startDate, lte: now },
+    },
+    include: { category: true },
+  });
+
+  // Calculate total spent
+  const totalSpent = transactions.reduce((sum, txn) => sum + Number(txn.amount), 0);
+
+  // Default budget (in production, this could be stored per-household or user preferences)
+  const monthlyBudget = 5000;
+
+  // Aggregate spending by category
+  const categoryTotals = new Map<string, { id: string; name: string; amount: number }>();
+  for (const txn of transactions) {
+    const categoryName = txn.category?.name ?? "Uncategorized";
+    const categoryId = txn.category?.id ?? "uncategorized";
+    const existing = categoryTotals.get(categoryId);
+    if (existing) {
+      existing.amount += Number(txn.amount);
+    } else {
+      categoryTotals.set(categoryId, { id: categoryId, name: categoryName, amount: Number(txn.amount) });
+    }
+  }
+
+  // Convert to array and calculate percentages
+  const categories = Array.from(categoryTotals.values())
+    .map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      amount: cat.amount,
+      percent: totalSpent > 0 ? (cat.amount / totalSpent) * 100 : 0,
+    }))
+    .sort((a, b) => b.amount - a.amount);
+
+  return {
+    totalSpent,
+    budget: monthlyBudget,
+    percentUsed: monthlyBudget > 0 ? (totalSpent / monthlyBudget) * 100 : 0,
+    categories,
+  };
 }

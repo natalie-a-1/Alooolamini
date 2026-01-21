@@ -1,11 +1,12 @@
 /**
  * Opportunity detail screen.
  */
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
+import { addToWatchlist, isInWatchlist, removeFromWatchlist } from '@/services/watchlist';
 import { COLORS } from '@/theme/colors';
 import { styles } from './OpportunityDetailScreen.styles';
 import {
@@ -24,8 +25,45 @@ interface OpportunityDetailScreenProps {
 
 export function OpportunityDetailScreen({ opportunity, onBack }: OpportunityDetailScreenProps) {
   const [amount, setAmount] = useState('');
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [isWatchlistLoading, setIsWatchlistLoading] = useState(true);
+  const [isWatchlistUpdating, setIsWatchlistUpdating] = useState(false);
   const performanceData = getPerformanceData(opportunity);
   const insets = useSafeAreaInsets();
+
+  // Check if portfolio is in watchlist
+  const checkWatchlistStatus = useCallback(async () => {
+    try {
+      const status = await isInWatchlist(opportunity.id);
+      setInWatchlist(status);
+    } catch (error) {
+      console.error('Failed to check watchlist status:', error);
+    } finally {
+      setIsWatchlistLoading(false);
+    }
+  }, [opportunity.id]);
+
+  useEffect(() => {
+    checkWatchlistStatus();
+  }, [checkWatchlistStatus]);
+
+  // Toggle watchlist status
+  const handleWatchlistToggle = async () => {
+    setIsWatchlistUpdating(true);
+    try {
+      if (inWatchlist) {
+        await removeFromWatchlist(opportunity.id);
+        setInWatchlist(false);
+      } else {
+        await addToWatchlist(opportunity.id);
+        setInWatchlist(true);
+      }
+    } catch (error) {
+      console.error('Failed to update watchlist:', error);
+    } finally {
+      setIsWatchlistUpdating(false);
+    }
+  };
 
   return (
     <Screen 
@@ -148,8 +186,28 @@ export function OpportunityDetailScreen({ opportunity, onBack }: OpportunityDeta
             </View>
           </View>
           <View style={styles.footerButtons}>
-            <Pressable style={[styles.footerButton, styles.footerSecondary]}>
-              <Text style={styles.footerSecondaryText}>Add to Watchlist</Text>
+            <Pressable 
+              style={[
+                styles.footerButton, 
+                inWatchlist ? styles.footerWatchlistActive : styles.footerSecondary
+              ]}
+              onPress={handleWatchlistToggle}
+              disabled={isWatchlistLoading || isWatchlistUpdating}
+            >
+              {isWatchlistUpdating ? (
+                <ActivityIndicator size="small" color={inWatchlist ? COLORS.surface : COLORS.ink} />
+              ) : (
+                <>
+                  <Icon 
+                    name={inWatchlist ? 'check' : 'plus'} 
+                    size={14} 
+                    color={inWatchlist ? COLORS.surface : COLORS.ink} 
+                  />
+                  <Text style={inWatchlist ? styles.footerWatchlistActiveText : styles.footerSecondaryText}>
+                    {inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                  </Text>
+                </>
+              )}
             </Pressable>
             <Pressable
               style={[styles.footerButton, amount ? styles.footerPrimary : styles.footerDisabled]}

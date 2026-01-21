@@ -229,6 +229,8 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
+    flexDirection: 'row',
+    gap: 6,
   },
   footerSecondaryText: {
     fontSize: 12,
@@ -250,5 +252,15 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.subtleInk,
+  },
+  footerWatchlistActive: {
+    backgroundColor: COLORS.accentEmerald,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  footerWatchlistActiveText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.surface,
   },
 });

@@ -23,7 +23,6 @@ import {
   verifyEmailToken,
 } from "./auth.service";
 import { prisma } from "../../db/prisma";
-import { generateToken } from "../../lib/crypto";
 
 /** Router for auth routes. */
 export const authRouter = Router();
@@ -86,16 +85,36 @@ authRouter.post("/logout", requireAuth, validate(logoutSchema), async (req, res,
   }
 });
 
+// Demo login - uses the pre-seeded demo account with full mock data
+const DEMO_EMAIL = "alex.morgan@alooola.dev";
+
 authRouter.post("/demo", validate(demoSchema), async (req, res, next) => {
   try {
-    const email = req.body.email ?? `demo+${generateToken(6)}@alooola.local`;
-    const name = req.body.name ?? "Demo User";
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: { name },
-      create: { email, name },
+    // Always use the pre-seeded demo account
+    const user = await prisma.user.findUnique({
+      where: { email: DEMO_EMAIL },
     });
-    const tokens = await issueTokens(user.id, user.email, { userAgent: req.get("user-agent") ?? undefined, ipAddress: req.ip });
+
+    if (!user) {
+      // If demo user doesn't exist, it means seed hasn't been run
+      // Create a minimal demo user as fallback
+      const fallbackUser = await prisma.user.upsert({
+        where: { email: DEMO_EMAIL },
+        update: {},
+        create: { email: DEMO_EMAIL, name: "Alex Morgan" },
+      });
+      const tokens = await issueTokens(fallbackUser.id, fallbackUser.email, { 
+        userAgent: req.get("user-agent") ?? undefined, 
+        ipAddress: req.ip 
+      });
+      res.json({ data: { user: fallbackUser, ...tokens } });
+      return;
+    }
+
+    const tokens = await issueTokens(user.id, user.email, { 
+      userAgent: req.get("user-agent") ?? undefined, 
+      ipAddress: req.ip 
+    });
     res.json({ data: { user, ...tokens } });
   } catch (err) {
     next(err);

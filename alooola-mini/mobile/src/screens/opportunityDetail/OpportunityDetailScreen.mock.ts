@@ -3,11 +3,12 @@
  */
 
 export interface Opportunity {
-  id: number;
+  id: string; // UUID from database
   name: string;
   ticker: string;
   return: string;
   risk: string;
+  description?: string;
 }
 
 export interface PerformanceData {

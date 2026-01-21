@@ -1,84 +1,161 @@
 /**
  * Styles for the Available screen.
  */
-import { StyleSheet } from 'react-native';
+import { Dimensions, StyleSheet } from 'react-native';
 import { COLORS } from '@/theme/colors';
-import { RADIUS, SPACING } from '@/theme/layout';
+import { RADIUS, SPACING, SCREEN_PADDING } from '@/theme/layout';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = SCREEN_WIDTH - SCREEN_PADDING * 2;
+const CARD_HEIGHT = CARD_WIDTH * 0.58; // Credit card aspect ratio ~1.6:1
+
+export const ACCOUNT_COLORS = {
+  checking: COLORS.accentBlue,
+  savings: COLORS.accentGreen,
+  investment: COLORS.accentPurple,
+  credit: COLORS.accentRose,
+} as const;
 
 export const styles = StyleSheet.create({
-  balanceBlock: {
+  // Header
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: SPACING.lg,
   },
-  label: {
-    fontSize: 12,
-    color: COLORS.mutedInk,
-    marginBottom: SPACING.sm,
+  headerLeft: {
+    flex: 1,
   },
-  balance: {
-    fontSize: 40,
+  title: {
+    fontSize: 28,
     fontWeight: '300',
     color: COLORS.ink,
+    marginBottom: SPACING.xs,
   },
-  card: {
+  totalBalance: {
+    fontSize: 14,
+    color: COLORS.mutedInk,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.ink,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.pill,
+    gap: SPACING.xs,
+  },
+  addButtonText: {
+    color: COLORS.surface,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Card Carousel
+  carouselContainer: {
+    marginBottom: SPACING.md,
+    marginHorizontal: -SCREEN_PADDING,
+  },
+  carouselContent: {
+    paddingHorizontal: SCREEN_PADDING,
+  },
+  accountCard: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.xl,
     padding: SPACING.xl,
-    marginBottom: SPACING.lg,
+    marginRight: SPACING.md,
     shadowColor: COLORS.shadow,
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  cardAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 6,
+    borderTopLeftRadius: RADIUS.xl,
+    borderBottomLeftRadius: RADIUS.xl,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingLeft: SPACING.sm,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
   },
-  cardLabel: {
-    fontSize: 12,
+  cardName: {
+    fontSize: 11,
+    fontWeight: '600',
     color: COLORS.mutedInk,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  cardValue: {
+  cardBalanceContainer: {
+    marginVertical: SPACING.md,
+  },
+  cardBalanceLabel: {
+    fontSize: 11,
+    color: COLORS.subtleInk,
+    marginBottom: SPACING.xs,
+  },
+  cardBalance: {
     fontSize: 32,
     fontWeight: '300',
     color: COLORS.ink,
-    marginBottom: SPACING.xs,
   },
-  cardMeta: {
-    fontSize: 11,
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  cardInstitution: {
+    fontSize: 12,
     color: COLORS.subtleInk,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    marginBottom: SPACING.xxl,
+  cardLast4: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.mutedInk,
+    letterSpacing: 2,
   },
-  button: {
-    flex: 1,
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.pill,
+  cardTypeIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.sm,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryButton: {
+
+  // Page Indicator
+  pageIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.xl,
+    gap: SPACING.sm,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.border,
+  },
+  dotActive: {
     backgroundColor: COLORS.ink,
+    width: 24,
   },
-  primaryButtonText: {
-    color: COLORS.surface,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  secondaryButtonText: {
-    color: COLORS.ink,
-    fontSize: 13,
-    fontWeight: '600',
-  },
+
+  // Transactions Section
   section: {
     marginBottom: SPACING.lg,
   },
@@ -88,10 +165,10 @@ export const styles = StyleSheet.create({
     color: COLORS.ink,
     marginBottom: SPACING.lg,
   },
-  list: {
+  transactionList: {
     gap: SPACING.sm,
   },
-  activityCard: {
+  transactionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
@@ -103,80 +180,176 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 1,
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: RADIUS.pill,
+  transactionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.md,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: SPACING.md,
   },
-  activityInfo: {
+  transactionInfo: {
     flex: 1,
   },
-  activityName: {
-    fontSize: 13,
-    fontWeight: '600',
+  transactionMerchant: {
+    fontSize: 14,
+    fontWeight: '500',
     color: COLORS.ink,
   },
-  activityDescription: {
-    fontSize: 11,
+  transactionMeta: {
+    fontSize: 12,
     color: COLORS.subtleInk,
+    marginTop: 2,
   },
-  activityDate: {
-    fontSize: 10,
-    color: COLORS.subtleInk,
-    marginTop: SPACING.xs,
+  transactionAmountContainer: {
+    alignItems: 'flex-end',
   },
-  activityAmount: {
-    fontSize: 13,
+  transactionAmount: {
+    fontSize: 14,
     fontWeight: '600',
   },
-  amountPositive: {
+  amountDebit: {
+    color: COLORS.ink,
+  },
+  amountCredit: {
     color: COLORS.success,
   },
-  amountNeutral: {
-    color: COLORS.ink,
+
+  // Empty State
+  emptyCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.xxl,
+    alignItems: 'center',
   },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: RADIUS.pill,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.ink,
+    marginBottom: SPACING.sm,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: COLORS.mutedInk,
+    textAlign: 'center',
+    marginBottom: SPACING.xl,
+    lineHeight: 20,
+  },
+  emptyButton: {
+    backgroundColor: COLORS.ink,
+    borderRadius: RADIUS.pill,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyButtonText: {
+    color: COLORS.surface,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Loading
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyCard: {
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.xl,
+    borderTopLeftRadius: RADIUS.xxl,
+    borderTopRightRadius: RADIUS.xxl,
     padding: SPACING.xl,
-    alignItems: 'center',
+    paddingBottom: SPACING.xxxl,
   },
-  emptyIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: RADIUS.pill,
-    backgroundColor: '#f3f4f6',
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xl,
   },
-  emptyTitle: {
-    fontSize: 14,
+  modalTitle: {
+    fontSize: 20,
     fontWeight: '600',
     color: COLORS.ink,
-    marginBottom: SPACING.xs,
   },
-  emptyText: {
-    fontSize: 12,
-    color: COLORS.mutedInk,
-    textAlign: 'center',
+  modalCloseButton: {
+    padding: SPACING.sm,
+  },
+  inputGroup: {
     marginBottom: SPACING.lg,
   },
-  emptyButton: {
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.mutedInk,
+    marginBottom: SPACING.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  textInput: {
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    fontSize: 16,
+    color: COLORS.ink,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  typeSelector: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  typeOption: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.lg,
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  typeOptionSelected: {
+    borderColor: COLORS.ink,
+    backgroundColor: COLORS.surface,
+  },
+  typeOptionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.mutedInk,
+    marginTop: SPACING.xs,
+  },
+  typeOptionTextSelected: {
+    color: COLORS.ink,
+  },
+  submitButton: {
     backgroundColor: COLORS.ink,
     borderRadius: RADIUS.pill,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+    marginTop: SPACING.md,
   },
-  emptyButtonText: {
+  submitButtonDisabled: {
+    opacity: 0.5,
+  },
+  submitButtonText: {
     color: COLORS.surface,
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

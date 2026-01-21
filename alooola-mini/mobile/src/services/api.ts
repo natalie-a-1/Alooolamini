@@ -63,6 +63,11 @@ export async function apiRequest<T>(
       headers,
     });
 
+    // Handle 204 No Content responses
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
     const json = await response.json();
 
     if (!response.ok) {

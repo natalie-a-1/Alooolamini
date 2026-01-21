@@ -31,7 +31,8 @@ async function upsertUser(email: string, name: string) {
 }
 
 async function main() {
-  const seedNow = new Date("2025-01-15T12:00:00Z");
+  // Use current date so transactions appear in "This Month" queries
+  const seedNow = new Date();
   const addDays = (date: Date, days: number) =>
     new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 
@@ -197,33 +198,79 @@ async function main() {
     },
   });
 
-  const account =
-    (await prisma.account.findFirst({
-      where: { householdId: household.id, name: "Primary Checking" },
-    })) ??
-    (await prisma.account.create({
-      data: {
-        householdId: household.id,
-        name: "Primary Checking",
-        type: "checking",
-        institution: "Alooola Bank",
-      },
-    }));
+  // Create multiple demo accounts
+  const accountsData = [
+    {
+      name: "Primary Checking",
+      type: "checking",
+      institution: "Alooola Bank",
+      last4: "1234",
+      availableBalance: money(32547),
+      currentBalance: money(34120),
+    },
+    {
+      name: "Emergency Savings",
+      type: "savings",
+      institution: "Alooola Bank",
+      last4: "5678",
+      availableBalance: money(15000),
+      currentBalance: money(15250),
+    },
+    {
+      name: "Investment Account",
+      type: "investment",
+      institution: "Vanguard",
+      last4: "9012",
+      availableBalance: money(45000),
+      currentBalance: money(47500),
+    },
+  ];
 
-  await prisma.accountBalance.upsert({
-    where: { accountId: account.id },
-    update: {
-      availableBalance: money(32547),
-      currentBalance: money(34120),
-      asOf: seedNow,
-    },
-    create: {
-      accountId: account.id,
-      availableBalance: money(32547),
-      currentBalance: money(34120),
-      asOf: seedNow,
-    },
-  });
+  const createdAccounts: { id: string; name: string }[] = [];
+  for (const accountData of accountsData) {
+    const existingAccount = await prisma.account.findFirst({
+      where: { householdId: household.id, name: accountData.name },
+    });
+
+    const savedAccount = existingAccount
+      ? await prisma.account.update({
+          where: { id: existingAccount.id },
+          data: {
+            type: accountData.type,
+            institution: accountData.institution,
+            last4: accountData.last4,
+          },
+        })
+      : await prisma.account.create({
+          data: {
+            householdId: household.id,
+            name: accountData.name,
+            type: accountData.type,
+            institution: accountData.institution,
+            last4: accountData.last4,
+          },
+        });
+
+    await prisma.accountBalance.upsert({
+      where: { accountId: savedAccount.id },
+      update: {
+        availableBalance: accountData.availableBalance,
+        currentBalance: accountData.currentBalance,
+        asOf: seedNow,
+      },
+      create: {
+        accountId: savedAccount.id,
+        availableBalance: accountData.availableBalance,
+        currentBalance: accountData.currentBalance,
+        asOf: seedNow,
+      },
+    });
+
+    createdAccounts.push({ id: savedAccount.id, name: savedAccount.name });
+  }
+
+  // Use the primary checking account for transactions
+  const account = createdAccounts[0];
 
   const categoryNames = [
     "Medical Equipment",
@@ -248,34 +295,55 @@ async function main() {
 
   const categoryByName = new Map(categories.map((category) => [category.name, category]));
 
-  const transactions = [
+  const savingsAccount = createdAccounts.find(a => a.name === "Emergency Savings");
+
+  // Primary checking transactions - use dates relative to seedNow
+  const checkingTransactions = [
     {
       merchant: "MedTech Supplies",
       amount: money(1250),
       category: "Medical Equipment",
-      txnDate: new Date("2025-01-10"),
+      txnDate: addDays(seedNow, -5),
+      userId: primaryUser.id,
     },
     {
       merchant: "Cardiology Conference",
       amount: money(890),
       category: "Continuing Education",
-      txnDate: new Date("2025-01-07"),
+      txnDate: addDays(seedNow, -8),
+      userId: primaryUser.id,
     },
     {
       merchant: "Professional Association",
       amount: money(650),
       category: "Professional Dues",
-      txnDate: new Date("2025-01-05"),
+      txnDate: addDays(seedNow, -10),
+      userId: primaryUser.id,
     },
     {
       merchant: "Café Dune",
       amount: money(485.5),
       category: "Dining",
-      txnDate: new Date("2025-01-03"),
+      txnDate: addDays(seedNow, -12),
+      userId: primaryUser.id,
+    },
+    {
+      merchant: "Uber",
+      amount: money(32.50),
+      category: "Transportation",
+      txnDate: addDays(seedNow, -13),
+      userId: secondaryUser.id,
+    },
+    {
+      merchant: "Whole Foods",
+      amount: money(156.23),
+      category: "Other",
+      txnDate: addDays(seedNow, -14),
+      userId: secondaryUser.id,
     },
   ];
 
-  for (const txn of transactions) {
+  for (const txn of checkingTransactions) {
     const category = categoryByName.get(txn.category);
     if (!category) continue;
     const existingTxn = await prisma.transaction.findFirst({
@@ -291,7 +359,7 @@ async function main() {
         data: {
           householdId: household.id,
           accountId: account.id,
-          attributedUserId: primaryUser.id,
+          attributedUserId: txn.userId,
           categoryId: category.id,
           txnType: TxnType.debit,
           amount: txn.amount,
@@ -300,6 +368,51 @@ async function main() {
           txnDate: txn.txnDate,
         },
       });
+    }
+  }
+
+  // Savings account transactions (deposits) - use dates relative to seedNow
+  const otherCategory = categoryByName.get("Other");
+  if (savingsAccount && otherCategory) {
+    const savingsTransactions = [
+      {
+        merchant: "Direct Deposit - Salary",
+        amount: money(5000),
+        txnDate: addDays(seedNow, -3),
+        txnType: TxnType.credit,
+      },
+      {
+        merchant: "Interest Payment",
+        amount: money(12.50),
+        txnDate: addDays(seedNow, -14),
+        txnType: TxnType.credit,
+      },
+    ];
+
+    for (const txn of savingsTransactions) {
+      const existingTxn = await prisma.transaction.findFirst({
+        where: {
+          accountId: savingsAccount.id,
+          merchant: txn.merchant,
+          amount: txn.amount,
+          txnDate: txn.txnDate,
+        },
+      });
+      if (!existingTxn) {
+        await prisma.transaction.create({
+          data: {
+            householdId: household.id,
+            accountId: savingsAccount.id,
+            attributedUserId: primaryUser.id,
+            categoryId: otherCategory.id,
+            txnType: txn.txnType,
+            amount: txn.amount,
+            currency: "USD",
+            merchant: txn.merchant,
+            txnDate: txn.txnDate,
+          },
+        });
+      }
     }
   }
 
@@ -397,7 +510,8 @@ async function main() {
     },
   ];
 
-  for (const portfolio of portfolios) {
+  for (let portfolioIndex = 0; portfolioIndex < portfolios.length; portfolioIndex++) {
+    const portfolio = portfolios[portfolioIndex];
     const existing = await prisma.curatedPortfolio.findFirst({
       where: { name: portfolio.name },
     });
@@ -447,26 +561,44 @@ async function main() {
       });
     }
 
-    const existingSnapshot = await prisma.portfolioSnapshot.findFirst({
-      where: {
-        userId: primaryUser.id,
-        householdId: household.id,
-        portfolioId: saved.id,
-        asOf: seedNow,
-      },
-    });
-    if (!existingSnapshot) {
-      await prisma.portfolioSnapshot.create({
-        data: {
-          userId: primaryUser.id,
-          householdId: household.id,
-          portfolioId: saved.id,
-          totalValue: money(134420.5),
-          gainAmount: money(2945.75),
-          gainPercent: new Prisma.Decimal("2.15"),
-        asOf: seedNow,
-        },
-      });
+    // Create historical snapshots for the chart (past 30 days)
+    // Only create for the first portfolio to avoid aggregation confusion
+    if (portfolioIndex === 0) {
+      const baseValue = 125000;
+      const currentValue = 134420.5;
+      const days = 30;
+      
+      for (let i = days; i >= 0; i--) {
+        const snapshotDate = addDays(seedNow, -i);
+        // Simulate gradual growth with some variation
+        const progress = (days - i) / days;
+        const variation = Math.sin(i * 0.5) * 2000; // Add some wave-like variation
+        const snapshotValue = baseValue + (currentValue - baseValue) * progress + variation;
+        const snapshotGain = snapshotValue - baseValue;
+        
+        const existingSnapshot = await prisma.portfolioSnapshot.findFirst({
+          where: {
+            userId: primaryUser.id,
+            householdId: household.id,
+            portfolioId: saved.id,
+            asOf: snapshotDate,
+          },
+        });
+        
+        if (!existingSnapshot) {
+          await prisma.portfolioSnapshot.create({
+            data: {
+              userId: primaryUser.id,
+              householdId: household.id,
+              portfolioId: saved.id,
+              totalValue: money(snapshotValue),
+              gainAmount: money(snapshotGain),
+              gainPercent: new Prisma.Decimal(((snapshotGain / baseValue) * 100).toFixed(2)),
+              asOf: snapshotDate,
+            },
+          });
+        }
+      }
     }
 
     await prisma.portfolioPosition.createMany({

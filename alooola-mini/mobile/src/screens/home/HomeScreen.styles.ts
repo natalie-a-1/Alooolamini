@@ -69,6 +69,9 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  gainIconCircleNegative: {
+    backgroundColor: '#fee2e2',
+  },
   gainText: {
     fontSize: 12,
     color: COLORS.mutedInk,
@@ -135,15 +138,34 @@ export const styles = StyleSheet.create({
   chartBar: {
     width: 4,
     borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.ink,
+    backgroundColor: COLORS.subtleInk,
   },
-  chartMidline: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '50%',
-    width: 1,
-    backgroundColor: COLORS.border,
+  chartBarSelected: {
+    backgroundColor: COLORS.accentPurple,
+    width: 6,
+  },
+  chartTooltip: {
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  chartTooltipValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.ink,
+  },
+  chartTooltipDate: {
+    fontSize: 12,
+    color: COLORS.mutedInk,
+    marginTop: 2,
+  },
+  chartDateLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: SPACING.sm,
+  },
+  chartDateLabel: {
+    fontSize: 10,
+    color: COLORS.subtleInk,
   },
   timeframeRow: {
     flexDirection: 'row',
@@ -177,6 +199,75 @@ export const styles = StyleSheet.create({
     fontWeight: '300',
     color: COLORS.ink,
     marginBottom: SPACING.lg,
+  },
+  watchlistSection: {
+    marginBottom: SPACING.lg,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '300',
+    color: COLORS.ink,
+    marginBottom: SPACING.lg,
+  },
+  watchlistList: {
+    gap: SPACING.sm,
+  },
+  watchlistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.surface,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    shadowColor: COLORS.shadow,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  watchlistItemLeft: {
+    flex: 1,
+    marginRight: SPACING.md,
+  },
+  watchlistItemName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.ink,
+    marginBottom: 2,
+  },
+  watchlistItemRisk: {
+    fontSize: 11,
+    color: COLORS.mutedInk,
+  },
+  watchlistItemRight: {
+    alignItems: 'flex-end',
+  },
+  watchlistItemReturn: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  watchlistItemLabel: {
+    fontSize: 10,
+    color: COLORS.subtleInk,
+    marginTop: 2,
+  },
+  returnPositive: {
+    color: COLORS.success,
+  },
+  returnNegative: {
+    color: COLORS.danger,
+  },
+  watchlistViewAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    marginTop: SPACING.sm,
+    paddingVertical: SPACING.sm,
+  },
+  watchlistViewAllText: {
+    fontSize: 12,
+    color: COLORS.mutedInk,
   },
   insightCard: {
     backgroundColor: COLORS.surface,
