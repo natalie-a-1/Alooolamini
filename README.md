@@ -48,10 +48,10 @@ If Metro gets stuck, clear the cache:
 npm run dev:mobile:clear
 ```
 
-For physical device testing, set your machine's IP:
+For physical device testing, set:
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL="http://YOUR_IP:4000/api/v1" npm run dev:mobile
+EXPO_PUBLIC_API_BASE_URL="https://alooola-mini-api.onrender.com/api/v1" npm run dev:mobile
 ```
 
 ### API
