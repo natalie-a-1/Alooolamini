@@ -26,6 +26,7 @@ import {
 } from '@/services/spending';
 import { COLORS } from '@/theme/colors';
 import { styles, ACCOUNT_COLORS } from './AvailableScreen.styles';
+import { formatCurrency, formatDate } from '@/lib/format';
 
 type AccountType = 'checking' | 'savings' | 'investment' | 'credit';
 
@@ -42,19 +43,6 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   investment: 'Invest',
   credit: 'Credit',
 };
-
-function formatCurrency(amount: number): string {
-  return amount.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  });
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 interface AccountCardProps {
   account: Account;

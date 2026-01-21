@@ -24,12 +24,13 @@ import {
   type Notification,
 } from '@/services/notifications';
 import { useHousehold } from '@/hooks/useHousehold';
+import { formatTime } from '@/lib/format';
 
-interface NotificationsModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onNotificationsChange?: () => void;
-}
+type NotificationsModalProps = {
+  readonly visible: boolean;
+  readonly onClose: () => void;
+  readonly onNotificationsChange?: () => void;
+};
 
 export function NotificationsModal({ visible, onClose, onNotificationsChange }: NotificationsModalProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -66,15 +67,15 @@ export function NotificationsModal({ visible, onClose, onNotificationsChange }: 
     try {
       await acceptHouseholdInvite(inviteToken);
       await markNotificationAsRead(notification.id);
-      
+
       // Update local state
       setNotifications((prev) =>
         prev.map((n) => (n.id === notification.id ? { ...n, readAt: new Date().toISOString() } : n))
       );
-      
+
       // Refetch household to update the household context
       await refetchHousehold();
-      
+
       Alert.alert('Success', `You have joined "${notification.data?.householdName || 'the household'}"!`);
       onNotificationsChange?.();
     } catch (error) {
@@ -113,12 +114,12 @@ export function NotificationsModal({ visible, onClose, onNotificationsChange }: 
             try {
               await declineHouseholdInvite(inviteToken);
               await markNotificationAsRead(notification.id);
-              
+
               // Update local state
               setNotifications((prev) =>
                 prev.map((n) => (n.id === notification.id ? { ...n, readAt: new Date().toISOString() } : n))
               );
-              
+
               onNotificationsChange?.();
             } catch (error) {
               if (error instanceof ApiClientError) {
@@ -138,21 +139,6 @@ export function NotificationsModal({ visible, onClose, onNotificationsChange }: 
         },
       ]
     );
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
   };
 
   const renderNotification = (notification: Notification) => {
@@ -178,7 +164,7 @@ export function NotificationsModal({ visible, onClose, onNotificationsChange }: 
             <Text style={styles.notificationTime}>{formatTime(notification.createdAt)}</Text>
           </View>
           <Text style={styles.notificationBody}>{notification.body}</Text>
-          
+
           {isHouseholdInvite && !isRead && (
             <View style={styles.notificationActions}>
               <Pressable
@@ -205,7 +191,7 @@ export function NotificationsModal({ visible, onClose, onNotificationsChange }: 
               </Pressable>
             </View>
           )}
-          
+
           {isHouseholdInvite && isRead && (
             <View style={styles.statusBadge}>
               <Icon name="check" size={12} color={COLORS.success} />
@@ -248,7 +234,7 @@ export function NotificationsModal({ visible, onClose, onNotificationsChange }: 
                   {unreadNotifications.map(renderNotification)}
                 </>
               )}
-              
+
               {readNotifications.length > 0 && (
                 <>
                   <Text style={styles.sectionTitle}>Earlier</Text>
