@@ -1,0 +1,1 @@
+export const DEFAULT_AVATAR_URL = "/assets/profile-pictures/Calm.svg";

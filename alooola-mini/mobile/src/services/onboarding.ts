@@ -1,47 +1,68 @@
 /**
  * Onboarding API service.
+ * Types match the API response structure from onboarding.schemas.ts
  */
 import { apiGet, apiPost, apiPut } from './api';
 
+// ============================================================================
+// Type Definitions (mirrored from API)
+// ============================================================================
+
+/** Risk tolerance levels. */
+export type RiskToleranceId = 'conservative' | 'moderate' | 'aggressive';
+
+/** Goal option returned from API. */
 export interface GoalOption {
-  id: string;
   key: string;
   label: string;
+  icon: string;
 }
 
-export interface OnboardingOptions {
-  goals: GoalOption[];
-  riskTolerances: Array<{ id: string; label: string; description: string }>;
-  starterAmounts: number[];
+/** Risk tolerance option with display info. */
+export interface RiskToleranceOption {
+  id: RiskToleranceId;
+  label: string;
+  description: string;
 }
 
+/** Household info. */
 export interface Household {
   id: string;
   name: string;
 }
 
+/** Onboarding options response. */
+export interface OnboardingOptions {
+  goals: GoalOption[];
+  riskTolerances: RiskToleranceOption[];
+  starterAmounts: number[];
+}
+
+/** User's current onboarding state. */
 export interface UserOnboarding {
   name: string | null;
   avatarUrl: string | null;
-  goals: string[];
-  riskTolerance: string | null;
+  goalKeys: string[];
+  goalOtherText: string | null;
+  riskTolerance: RiskToleranceId | null;
   starterAmount: number | null;
   starterAmountCustom: number | null;
-  goalOtherText: string | null;
   completedAt: string | null;
   household: Household | null;
 }
 
+/** Input for saving onboarding data. */
 export interface OnboardingInput {
   name?: string;
   avatarUrl?: string | null;
-  goals?: string[];
-  riskTolerance?: string;
+  goalKeys?: string[];
+  goalOtherText?: string;
+  riskTolerance?: RiskToleranceId;
   starterAmount?: number;
   starterAmountCustom?: number;
-  goalOtherText?: string;
 }
 
+/** Join household response. */
 export interface JoinHouseholdResult {
   household: Household;
   membership: {
@@ -51,6 +72,7 @@ export interface JoinHouseholdResult {
   };
 }
 
+/** Complete onboarding response. */
 export interface CompleteOnboardingResult {
   completed: boolean;
   household: Household | null;
