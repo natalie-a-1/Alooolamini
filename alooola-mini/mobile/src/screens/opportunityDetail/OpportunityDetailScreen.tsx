@@ -1,0 +1,223 @@
+/**
+ * Opportunity detail screen.
+ */
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '@/components/Icon';
+import { Screen } from '@/components/Screen';
+import { addToWatchlist, isInWatchlist, removeFromWatchlist } from '@/services/watchlist';
+import { COLORS } from '@/theme/colors';
+import { styles } from './OpportunityDetailScreen.styles';
+import {
+  CHART_DATA,
+  getPerformanceData,
+  MOCK_BENEFITS,
+  MOCK_KEY_METRICS,
+  MOCK_RISK_FACTORS,
+  type Opportunity,
+} from './OpportunityDetailScreen.mock';
+
+interface OpportunityDetailScreenProps {
+  opportunity: Opportunity;
+  onBack: () => void;
+}
+
+export function OpportunityDetailScreen({ opportunity, onBack }: OpportunityDetailScreenProps) {
+  const [amount, setAmount] = useState('');
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [isWatchlistLoading, setIsWatchlistLoading] = useState(true);
+  const [isWatchlistUpdating, setIsWatchlistUpdating] = useState(false);
+  const performanceData = getPerformanceData(opportunity);
+  const insets = useSafeAreaInsets();
+
+  // Check if portfolio is in watchlist
+  const checkWatchlistStatus = useCallback(async () => {
+    try {
+      const status = await isInWatchlist(opportunity.id);
+      setInWatchlist(status);
+    } catch (error) {
+      console.error('Failed to check watchlist status:', error);
+    } finally {
+      setIsWatchlistLoading(false);
+    }
+  }, [opportunity.id]);
+
+  useEffect(() => {
+    checkWatchlistStatus();
+  }, [checkWatchlistStatus]);
+
+  // Toggle watchlist status
+  const handleWatchlistToggle = async () => {
+    setIsWatchlistUpdating(true);
+    try {
+      if (inWatchlist) {
+        await removeFromWatchlist(opportunity.id);
+        setInWatchlist(false);
+      } else {
+        await addToWatchlist(opportunity.id);
+        setInWatchlist(true);
+      }
+    } catch (error) {
+      console.error('Failed to update watchlist:', error);
+    } finally {
+      setIsWatchlistUpdating(false);
+    }
+  };
+
+  return (
+    <Screen 
+      scroll={false}
+      contentContainerStyle={{ paddingBottom: insets.bottom }}
+    >
+      <View style={styles.header}>
+        <Pressable onPress={onBack} style={styles.backButton}>
+          <Icon name="chevronRight" size={16} color={COLORS.ink} style={styles.backIcon} />
+        </Pressable>
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {opportunity.name}
+          </Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            {opportunity.ticker}
+          </Text>
+        </View>
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView 
+          style={styles.scroll} 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Icon name="trendingUp" size={16} color={COLORS.accentEmerald} />
+              <Text style={styles.cardTitle}>Performance</Text>
+            </View>
+            <View style={styles.performanceRow}>
+              {performanceData.map((perf) => (
+                <View key={perf.period} style={styles.performanceCell}>
+                  <Text style={styles.performanceLabel}>{perf.period}</Text>
+                  <Text style={styles.performanceValue}>{perf.value}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.barChart}>
+              {CHART_DATA.map((height, index) => (
+                <View key={`${height}-${index}`} style={[styles.bar, { height: `${height}%` }]} />
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Icon name="info" size={16} color={COLORS.mutedInk} />
+              <Text style={styles.cardTitle}>Key Metrics</Text>
+            </View>
+            <View style={styles.metricsGrid}>
+              {MOCK_KEY_METRICS.map((metric) => (
+                <View key={metric.label} style={styles.metricCell}>
+                  <Text style={styles.metricLabel}>{metric.label}</Text>
+                  <Text style={styles.metricValue}>{metric.value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Icon name="alert" size={16} color={COLORS.mutedInk} />
+              <Text style={styles.cardTitle}>Risk Factors</Text>
+            </View>
+            <View style={styles.riskList}>
+              {MOCK_RISK_FACTORS.map((factor) => (
+                <View key={factor} style={styles.riskRow}>
+                  <View style={styles.riskDot} />
+                  <Text style={styles.riskText}>{factor}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.riskLevel}>
+              <Text style={styles.riskLabel}>Risk Level</Text>
+              <Text style={styles.riskValue}>{opportunity.risk}</Text>
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>About</Text>
+            <Text style={styles.bodyText}>
+              This investment focuses on healthcare sector opportunities, providing exposure to medical properties, innovation,
+              and industry leaders. Designed for investors who understand sector dynamics and long-term growth potential.
+            </Text>
+          </View>
+
+          <View style={[styles.card, styles.benefitCard]}>
+            <Text style={styles.cardTitle}>Key Benefits</Text>
+            <View style={styles.benefitList}>
+              {MOCK_BENEFITS.map((benefit) => (
+                <View key={benefit} style={styles.benefitRow}>
+                  <Icon name="arrowUpRight" size={12} color={COLORS.mutedInk} />
+                  <Text style={styles.benefitText}>{benefit}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <View style={styles.amountCard}>
+            <Text style={styles.amountLabel}>Investment Amount</Text>
+            <View style={styles.amountRow}>
+              <Text style={styles.amountPrefix}>$</Text>
+              <TextInput
+                placeholder="0"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="numeric"
+                style={styles.amountInput}
+                placeholderTextColor={COLORS.subtleInk}
+              />
+            </View>
+          </View>
+          <View style={styles.footerButtons}>
+            <Pressable 
+              style={[
+                styles.footerButton, 
+                inWatchlist ? styles.footerWatchlistActive : styles.footerSecondary
+              ]}
+              onPress={handleWatchlistToggle}
+              disabled={isWatchlistLoading || isWatchlistUpdating}
+            >
+              {isWatchlistUpdating ? (
+                <ActivityIndicator size="small" color={inWatchlist ? COLORS.surface : COLORS.ink} />
+              ) : (
+                <>
+                  <Icon 
+                    name={inWatchlist ? 'check' : 'plus'} 
+                    size={14} 
+                    color={inWatchlist ? COLORS.surface : COLORS.ink} 
+                  />
+                  <Text style={inWatchlist ? styles.footerWatchlistActiveText : styles.footerSecondaryText}>
+                    {inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+            <Pressable
+              style={[styles.footerButton, amount ? styles.footerPrimary : styles.footerDisabled]}
+              disabled={!amount}
+            >
+              <Text style={amount ? styles.footerPrimaryText : styles.footerDisabledText}>Invest Now</Text>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Screen>
+  );
+}
