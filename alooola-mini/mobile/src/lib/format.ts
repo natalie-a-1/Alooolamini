@@ -11,6 +11,18 @@ export function formatDate(dateString: string): string {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
+  // Get the number of days for each timeframe
+export function getTimeframeDays(tf: string): number {
+  switch (tf) {
+    case '1M': return 30;
+    case '3M': return 90;
+    case '6M': return 180;
+    case '1Y': return 365;
+    case 'ALL': return Infinity;
+    default: return 30;
+  }
+}
+
 export function formatTime(dateString: string): string {
     const date = new Date(dateString);
     const now = new Date();

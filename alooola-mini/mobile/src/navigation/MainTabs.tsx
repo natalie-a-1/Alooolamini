@@ -7,7 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeScreen } from '@/screens/home';
 import { DiscoverScreen } from '@/screens/discover';
-import { AvailableScreen } from '@/screens/available';
+import { AccountsScreen } from '@/screens/accounts';
 import { SpendingScreen } from '@/screens/spending';
 import { ProfileScreen } from '@/screens/profile';
 import { Icon } from '@/components/Icon';
@@ -20,7 +20,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const ICONS: Record<string, string> = {
   Home: 'home',
   Discover: 'search',
-  Available: 'wallet',
+  Accounts: 'wallet',
   Spending: 'creditCard',
   Profile: 'grid',
 };
@@ -52,7 +52,7 @@ export function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />
-      <Tab.Screen name="Available" component={AvailableScreen} />
+      <Tab.Screen name="Accounts" component={AccountsScreen} />
       <Tab.Screen name="Spending" component={SpendingScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

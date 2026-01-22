@@ -1,4 +1,4 @@
-export { AvailableScreen } from './available';
+export { AccountsScreen } from './accounts';
 export { DiscoverScreen } from './discover';
 export { HomeScreen } from './home';
 export { LoginScreen } from './login';

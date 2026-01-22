@@ -15,7 +15,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Discover: { openAIChat?: boolean } | undefined;
-  Available: undefined;
+  Accounts: undefined;
   Spending: undefined;
   Profile: undefined;
 };
