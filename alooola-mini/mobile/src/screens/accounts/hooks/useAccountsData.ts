@@ -12,6 +12,7 @@ type AddAccountPayload = {
   type: AccountType;
   institution?: string;
   last4?: string;
+  currentBalance?: number;
 };
 
 export function useAccountsData() {

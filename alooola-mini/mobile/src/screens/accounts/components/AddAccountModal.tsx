@@ -21,30 +21,39 @@ import { type AccountType } from '../hooks/useAccountsData';
 type AddAccountModalProps = {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (data: { name: string; type: AccountType; institution?: string; last4?: string }) => Promise<number | null>;
+  onSubmit: (data: {
+    name: string;
+    type: AccountType;
+    institution?: string;
+    last4?: string;
+    currentBalance?: number;
+  }) => Promise<number | null>;
   isSubmitting: boolean;
 };
 
 export function AddAccountModal({ visible, onClose, onSubmit, isSubmitting }: AddAccountModalProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('checking');
-  const [institution, setInstitution] = useState('');
-  const [last4, setLast4] = useState('');
+  const INSTITUTIONS = ['Chase', 'Bank of America', 'Wells Fargo', 'Citi'];
+  const [institution, setInstitution] = useState(INSTITUTIONS[0]);
+  const [currentBalance, setCurrentBalance] = useState('');
 
   const canSubmit = name.trim().length > 0 && !isSubmitting;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    const generatedLast4 = Math.floor(1000 + Math.random() * 9000).toString();
     await onSubmit({
       name: name.trim(),
       type,
       institution: institution.trim() || undefined,
-      last4: last4.trim() || undefined,
+      last4: generatedLast4,
+      currentBalance: currentBalance ? Number(currentBalance) : undefined,
     });
     setName('');
     setType('checking');
-    setInstitution('');
-    setLast4('');
+    setInstitution(INSTITUTIONS[0]);
+    setCurrentBalance('');
   };
 
   const accountTypes: AccountType[] = ['checking', 'savings', 'investment', 'credit'];
@@ -95,26 +104,31 @@ export function AddAccountModal({ visible, onClose, onSubmit, isSubmitting }: Ad
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Institution (Optional)</Text>
-              <TextInput
-                style={styles.textInput}
-                value={institution}
-                onChangeText={setInstitution}
-                placeholder="e.g., Chase Bank"
-                placeholderTextColor={COLORS.subtleInk}
-              />
+              <Text style={styles.inputLabel}>Institution</Text>
+              <View style={styles.typeSelector}>
+                {INSTITUTIONS.map((bank) => (
+                  <Pressable
+                    key={bank}
+                    style={[styles.typeOption, institution === bank && styles.typeOptionSelected]}
+                    onPress={() => setInstitution(bank)}
+                  >
+                    <Text style={[styles.typeOptionText, institution === bank && styles.typeOptionTextSelected]}>
+                      {bank}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Last 4 Digits (Optional)</Text>
+              <Text style={styles.inputLabel}>Current Balance (Optional)</Text>
               <TextInput
                 style={styles.textInput}
-                value={last4}
-                onChangeText={(text) => setLast4(text.replace(/\D/g, '').slice(0, 4))}
-                placeholder="1234"
+                value={currentBalance}
+                onChangeText={(text) => setCurrentBalance(text.replace(/[^0-9.]/g, ''))}
+                placeholder="0.00"
                 placeholderTextColor={COLORS.subtleInk}
-                keyboardType="numeric"
-                maxLength={4}
+                keyboardType="decimal-pad"
               />
             </View>
 

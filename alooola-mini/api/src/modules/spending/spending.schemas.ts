@@ -24,6 +24,7 @@ export const createAccountSchema = z.object({
     type: z.enum(["checking", "savings", "investment", "credit"]),
     institution: z.string().max(100).optional(),
     last4: z.string().length(4).optional(),
+    currentBalance: z.number().nonnegative().optional(),
   }),
   params: z.object({ householdId: z.string().uuid() }),
   query: z.object({}).optional().default({}),

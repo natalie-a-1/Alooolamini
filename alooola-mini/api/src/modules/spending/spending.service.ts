@@ -4,6 +4,7 @@
 import { prisma } from "../../db/prisma";
 import { decodeCursor, encodeCursor, buildCursorResponse } from "../../lib/pagination";
 import { notFound, forbidden } from "../../lib/errors";
+import { normalizeAccountBalance } from "../../lib/normalizers/account";
 
 async function ensureHouseholdAccess(userId: string, householdId: string) {
   const membership = await prisma.householdMember.findFirst({
@@ -16,11 +17,12 @@ async function ensureHouseholdAccess(userId: string, householdId: string) {
 
 /** List accounts. */
 export async function listAccounts(householdId: string) {
-  return prisma.account.findMany({
+  const accounts = await prisma.account.findMany({
     where: { householdId },
     include: { balance: true },
     orderBy: { createdAt: "asc" },
   });
+  return accounts.map(normalizeAccountBalance);
 }
 
 /** Create account. */
@@ -29,6 +31,7 @@ export async function createAccount(householdId: string, data: {
   type: string;
   institution?: string;
   last4?: string;
+  currentBalance?: number;
 }) {
   const account = await prisma.account.create({
     data: {
@@ -44,16 +47,17 @@ export async function createAccount(householdId: string, data: {
   await prisma.accountBalance.create({
     data: {
       accountId: account.id,
-      availableBalance: 0,
-      currentBalance: 0,
+      availableBalance: data.currentBalance ?? 0,
+      currentBalance: data.currentBalance ?? 0,
       asOf: new Date(),
     },
   });
 
-  return prisma.account.findUnique({
+  const created = await prisma.account.findUnique({
     where: { id: account.id },
     include: { balance: true },
   });
+  return created ? normalizeAccountBalance(created) : null;
 }
 
 /** Get account. */
@@ -66,7 +70,7 @@ export async function getAccount(userId: string, accountId: string) {
     throw notFound("Account not found");
   }
   await ensureHouseholdAccess(userId, account.householdId);
-  return account;
+  return normalizeAccountBalance(account);
 }
 
 /** List categories. */

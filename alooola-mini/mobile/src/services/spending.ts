@@ -73,6 +73,7 @@ export async function createAccount(
     type: 'checking' | 'savings' | 'investment' | 'credit';
     institution?: string;
     last4?: string;
+    currentBalance?: number;
   }
 ): Promise<Account> {
   return apiPost<Account>(`/households/${householdId}/accounts`, data);
