@@ -1,5 +1,14 @@
 /**
  * Business logic for the spending module.
+ *
+ * This service provides functions for:
+ * - Account listing, creation, retrieval
+ * - Category listing, creation
+ * - Transaction creation, updating, listing, retrieval
+ * - Investment snapshots and summaries
+ * - Household access checks and spending aggregation
+ *
+ * Data access is performed using Prisma ORM.
  */
 import { prisma } from "../../db/prisma";
 import { Prisma } from "@prisma/client";
@@ -8,6 +17,9 @@ import { decodeCursor, encodeCursor, buildCursorResponse } from "../../lib/pagin
 import { notFound, forbidden } from "../../lib/errors";
 import { normalizeAccountBalance } from "../../lib/normalizers/account";
 
+/**
+ * Shape of the transaction data transfer object.
+ */
 type TransactionDto = {
   id: string;
   accountId: string;
@@ -21,6 +33,9 @@ type TransactionDto = {
   attributedUser: { id: string; name: string } | null;
 };
 
+/**
+ * Transaction object with related information for conversion helpers.
+ */
 type TransactionWithRelations = {
   id: string;
   accountId: string;
@@ -34,6 +49,12 @@ type TransactionWithRelations = {
   attributedUser?: { id: string; name: string | null } | null;
 };
 
+/**
+ * Converts a TransactionWithRelations object to a TransactionDto.
+ * Ensures decimal numbers are normalized to JS numbers and related objects are formatted.
+ * @param txn The transaction with relations to convert
+ * @returns The DTO for API response
+ */
 function transactionToDto(txn: TransactionWithRelations): TransactionDto {
   const amountValue = typeof txn.amount === "number" ? txn.amount : txn.amount.toNumber();
   return {
@@ -50,6 +71,12 @@ function transactionToDto(txn: TransactionWithRelations): TransactionDto {
   };
 }
 
+/**
+ * Ensures that a user has accepted membership in the given household.
+ * Throws Forbidden if user is not a member.
+ * @param userId The ID of the user to check
+ * @param householdId The household to check membership in
+ */
 async function ensureHouseholdAccess(userId: string, householdId: string) {
   const membership = await prisma.householdMember.findFirst({
     where: { userId, householdId, status: "accepted" },
@@ -59,6 +86,11 @@ async function ensureHouseholdAccess(userId: string, householdId: string) {
   }
 }
 
+/**
+ * Converts a string range identifier to a JavaScript Date object representing the start.
+ * @param range String identifier (e.g., "1M", "3M", "6M", "1Y" or "ALL")
+ * @returns Date object or null if no range
+ */
 function rangeToDate(range?: string) {
   if (!range || range === "ALL") return null;
   const now = new Date();
@@ -81,7 +113,10 @@ function rangeToDate(range?: string) {
   }
 }
 
-/** List accounts. */
+/**
+ * Returns all accounts for a household, with current balances.
+ * @param householdId The target household ID
+ */
 export async function listAccounts(householdId: string) {
   const accounts = await prisma.account.findMany({
     where: { householdId },
@@ -91,7 +126,11 @@ export async function listAccounts(householdId: string) {
   return accounts.map(normalizeAccountBalance);
 }
 
-/** Create account. */
+/**
+ * Creates a new bank/account for a household and initializes a balance.
+ * @param householdId Household for which to create the account
+ * @param data Account creation details: name, type, optional institution, last4, starting balance
+ */
 export async function createAccount(householdId: string, data: {
   name: string;
   type: string;
@@ -109,7 +148,7 @@ export async function createAccount(householdId: string, data: {
     },
   });
 
-  // Create initial zero balance
+  // Create initial zero balance or initial balance if provided
   await prisma.accountBalance.create({
     data: {
       accountId: account.id,
@@ -126,7 +165,11 @@ export async function createAccount(householdId: string, data: {
   return created ? normalizeAccountBalance(created) : null;
 }
 
-/** Get account. */
+/**
+ * Fetches a single account for a user, ensuring they are a household member.
+ * @param userId The user's ID for household access checking
+ * @param accountId The specific account's ID
+ */
 export async function getAccount(userId: string, accountId: string) {
   const account = await prisma.account.findUnique({
     where: { id: accountId },
@@ -139,6 +182,13 @@ export async function getAccount(userId: string, accountId: string) {
   return normalizeAccountBalance(account);
 }
 
+/**
+ * Either inserts a new investment portfolio snapshot, or skips if latest is unchanged.
+ * Used to track historical portfolio values.
+ * @param userId   ID of user
+ * @param householdId  ID of household
+ * @param totalValue  Total portfolio value
+ */
 async function upsertInvestmentSnapshot(userId: string, householdId: string, totalValue: number) {
   const latest = await prisma.portfolioSnapshot.findFirst({
     where: { userId, householdId, portfolioId: null },
@@ -161,7 +211,15 @@ async function upsertInvestmentSnapshot(userId: string, householdId: string, tot
   });
 }
 
-/** Get aggregated investment summary for a household (investment accounts only). */
+/**
+ * Returns a summary of investment account values and portfolio snapshots for a household.
+ * Only investment-type accounts are considered.
+ *
+ * @param userId      The user requesting the summary
+ * @param householdId Household ID being queried
+ * @param range       Optional time range string (see rangeToDate)
+ * @returns           Object with totalValue and snapshots array
+ */
 export async function getInvestmentSummary(userId: string, householdId: string, range?: string) {
   await ensureHouseholdAccess(userId, householdId);
   const accounts = await prisma.account.findMany({
@@ -195,7 +253,10 @@ export async function getInvestmentSummary(userId: string, householdId: string, 
   };
 }
 
-/** List categories. */
+/**
+ * Lists all categories associated with a household.
+ * @param householdId Household to retrieve categories for
+ */
 export async function listCategories(householdId: string) {
   return prisma.category.findMany({
     where: { householdId },
@@ -203,14 +264,24 @@ export async function listCategories(householdId: string) {
   });
 }
 
-/** Create category. */
+/**
+ * Creates a new spending/expense category for a household.
+ * @param householdId Household to add category to
+ * @param name        Category name
+ */
 export async function createCategory(householdId: string, name: string) {
   return prisma.category.create({
     data: { householdId, name },
   });
 }
 
-/** Create transaction and update account balance. */
+/**
+ * Creates a transaction and updates the associated account's balance.
+ * Verifies membership and category validity. Upserts balance row if needed.
+ * @param userId      User who creates transaction
+ * @param householdId Household in which transaction occurs
+ * @param data        Transaction details (account, type, amount, merchant, etc)
+ */
 export async function createTransaction(userId: string, householdId: string, data: {
   accountId: string;
   txnType: "spend" | "receive";
@@ -233,6 +304,7 @@ export async function createTransaction(userId: string, householdId: string, dat
 
   let categoryId = data.categoryId;
   if (!categoryId) {
+    // Use or create fallback "Other" category if not provided
     const fallback = await prisma.category.upsert({
       where: {
         householdId_name: {
@@ -246,7 +318,7 @@ export async function createTransaction(userId: string, householdId: string, dat
     categoryId = fallback.id;
   }
 
-  // Ensure category belongs to household
+  // Ensure selected category belongs to this household
   const category = await prisma.category.findFirst({
     where: { id: categoryId, householdId },
   });
@@ -274,7 +346,8 @@ export async function createTransaction(userId: string, householdId: string, dat
     include: { account: true, category: true, attributedUser: true },
   });
 
-  // Update balances: spend reduces, receive increases. Use upsert so we don't error if a balance row is missing.
+  // Update balances: 'spend' reduces, 'receive' increases.
+  // Uses upsert so missing balance row is created.
   const isSpend = txnType === "spend";
   const delta = isSpend ? -amount : amount;
   const currentBalance = Number(account.balance?.currentBalance ?? 0);
@@ -297,7 +370,14 @@ export async function createTransaction(userId: string, householdId: string, dat
   return transactionToDto(txn);
 }
 
-/** List transactions. */
+/**
+ * Returns a paginated (cursor-based) list of transactions for a household.
+ * Supports filtering by search (q), category, account, attributed user, type, and date range.
+ * 
+ * @param householdId The ID of the household to list transactions for
+ * @param options     Filter and pagination options
+ * @returns           Object with items, cursors, and pagination info
+ */
 export async function listTransactions(householdId: string, options: {
   cursor?: string;
   limit?: number;
@@ -312,6 +392,7 @@ export async function listTransactions(householdId: string, options: {
   const limit = options.limit ?? 25;
   const where: Record<string, unknown> = { householdId };
 
+  // Filtering logic applied to query
   if (options.q) {
     where.merchant = { contains: options.q, mode: "insensitive" };
   }
@@ -334,6 +415,7 @@ export async function listTransactions(householdId: string, options: {
     };
   }
 
+  // Cursor-based pagination for stable sorts
   if (options.cursor) {
     const [dateIso, id] = decodeCursor(options.cursor);
     const cursorDate = new Date(dateIso);
@@ -360,7 +442,11 @@ export async function listTransactions(householdId: string, options: {
   };
 }
 
-/** Get transaction. */
+/**
+ * Fetches a single transaction by ID and ensures the user belongs to its household.
+ * @param userId        The user's ID to check household membership
+ * @param transactionId Transaction to fetch
+ */
 export async function getTransaction(userId: string, transactionId: string) {
   const txn = await prisma.transaction.findUnique({
     where: { id: transactionId },
@@ -373,7 +459,13 @@ export async function getTransaction(userId: string, transactionId: string) {
   return transactionToDto(txn);
 }
 
-/** Update transaction. */
+/**
+ * Updates certain fields of a transaction (category, note, attributed user).
+ * Only allowed for users of the correct household.
+ * @param userId        The updater's user ID
+ * @param transactionId The transaction to update
+ * @param data          Updatable fields
+ */
 export async function updateTransaction(userId: string, transactionId: string, data: {
   categoryId?: string;
   note?: string;
@@ -391,9 +483,18 @@ export async function updateTransaction(userId: string, transactionId: string, d
   });
 }
 
-/** Get spending summary for a household. */
+/**
+ * Summarizes spending for a household in a given period, including total spent,
+ * a fixed budget, and a breakdown by category.
+ *
+ * Supported periods: "This Week", "This Year", "Last Month", "Last 3 Months", "This Month" (default)
+ *
+ * @param householdId  The household for which to summarize
+ * @param period       Period identifier string
+ * @returns            Summary including totalSpent, budget, usage percent and per-category breakdown
+ */
 export async function getSpendingSummary(householdId: string, period?: string) {
-  // Calculate date range based on period
+  // Calculate date range based on period parameter
   const now = new Date();
   let startDate: Date;
 
@@ -418,7 +519,7 @@ export async function getSpendingSummary(householdId: string, period?: string) {
       break;
   }
 
-  // Get all debit transactions in the period
+  // Query all 'spend' transactions in the computed window.
   const transactions = await prisma.transaction.findMany({
     where: {
       householdId,
@@ -428,13 +529,13 @@ export async function getSpendingSummary(householdId: string, period?: string) {
     include: { category: true },
   });
 
-  // Calculate total spent
+  // Aggregate the total spent amount
   const totalSpent = transactions.reduce((sum, txn) => sum + Number(txn.amount), 0);
 
-  // Default budget (in production, this could be stored per-household or user preferences)
+  // Default/monthly budget (could be dynamic per household in a real app)
   const monthlyBudget = 5000;
 
-  // Aggregate spending by category
+  // Group spending by category, tallying amounts
   const categoryTotals = new Map<string, { id: string; name: string; amount: number }>();
   for (const txn of transactions) {
     const categoryName = txn.category?.name ?? "Uncategorized";
@@ -447,7 +548,7 @@ export async function getSpendingSummary(householdId: string, period?: string) {
     }
   }
 
-  // Convert to array and calculate percentages
+  // To array of categories, include percent of total, sorted by amount
   const categories = Array.from(categoryTotals.values())
     .map((cat) => ({
       id: cat.id,
