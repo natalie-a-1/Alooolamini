@@ -18,6 +18,7 @@ import { Icon } from '@/components/Icon';
 import { COLORS } from '@/theme/colors';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { type Transaction } from '@/services/spending';
+import { getCategoryVisual } from '@/lib/constants';
 import { styles } from '../AccountsScreen.styles';
 
 /**
@@ -45,11 +46,16 @@ export function TransactionRow({ transaction }: TransactionRowProps) {
   // Format the transaction date
   const formattedDate = formatDate(transaction.txnDate);
 
+  // Get category visual (icon, color, label) - defaults to 'other' if no category
+  const categoryVisual = getCategoryVisual(transaction.category?.name ?? 'other');
+  const iconName = categoryVisual.icon;
+  const iconColor = categoryVisual.color;
+
   return (
     <View style={styles.transactionCard} accessibilityRole="button" accessibilityLabel={`Transaction: ${transaction.merchant} ${formatCurrency(adjustedAmount)}`}>
       {/* Transaction Icon */}
       <View style={styles.transactionIcon}>
-        <Icon name="dollar" size={18} color={COLORS.mutedInk} />
+        <Icon name={iconName} size={18} color={iconColor} />
       </View>
       {/* Transaction Info: Merchant and metadata */}
       <View style={styles.transactionInfo}>

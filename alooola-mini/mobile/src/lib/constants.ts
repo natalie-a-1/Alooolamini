@@ -1,7 +1,6 @@
 import { IconProps } from "@/components/Icon";
 import { COLORS } from "@/theme/colors";
 import { normalizeName } from "./format";
-import { AccountType } from "@/screens/accounts/hooks/useAccountsData";
 
 export const REFRESH_TOKEN_KEY = 'refresh_token';
 
