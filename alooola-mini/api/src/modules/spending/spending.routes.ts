@@ -1,5 +1,14 @@
 /**
- * Route handlers for the spending module.
+ * Spending Module Route Handlers
+ *
+ * Provides REST API endpoints for managing household spending:
+ * - Accounts (list, detail, create)
+ * - Investments summary
+ * - Categories (list, create)
+ * - Spending summaries
+ * - Transactions (list, detail, create, update)
+ *
+ * All endpoints require authentication and authorization per household member role.
  */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
@@ -32,9 +41,15 @@ import {
   updateTransaction,
 } from "./spending.service";
 
-/** Router for spending routes. */
+/** Express Router for spending-related endpoints */
 export const spendingRouter = Router();
 
+/**
+ * @route   GET /households/:householdId/accounts
+ * @desc    List all financial accounts for a household
+ * @access  Requires auth, any member role
+ * @query   See listAccountsSchema
+ */
 spendingRouter.get(
   "/households/:householdId/accounts",
   requireAuth,
@@ -50,6 +65,12 @@ spendingRouter.get(
   }
 );
 
+/**
+ * @route   POST /households/:householdId/accounts
+ * @desc    Create a new financial account in the household
+ * @access  Requires auth, 'owner' or 'member' roles
+ * @body    See createAccountSchema
+ */
 spendingRouter.post(
   "/households/:householdId/accounts",
   requireAuth,
@@ -65,6 +86,12 @@ spendingRouter.post(
   }
 );
 
+/**
+ * @route   GET /households/:householdId/investments/summary
+ * @desc    Retrieve summarized investment performance/positions for a household
+ * @access  Requires auth, any member role
+ * @query   ?range=...
+ */
 spendingRouter.get(
   "/households/:householdId/investments/summary",
   requireAuth,
@@ -81,15 +108,31 @@ spendingRouter.get(
   }
 );
 
-spendingRouter.get("/accounts/:accountId", requireAuth, validate(accountDetailSchema), async (req, res, next) => {
-  try {
-    const account = await getAccount(req.user!.id, req.params.accountId);
-    res.json({ data: account });
-  } catch (err) {
-    next(err);
+/**
+ * @route   GET /accounts/:accountId
+ * @desc    Retrieve details for a single account
+ * @access  Requires auth, accepted member of household
+ * @param   accountId
+ */
+spendingRouter.get(
+  "/accounts/:accountId",
+  requireAuth,
+  validate(accountDetailSchema),
+  async (req, res, next) => {
+    try {
+      const account = await getAccount(req.user!.id, req.params.accountId);
+      res.json({ data: account });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
+/**
+ * @route   GET /households/:householdId/categories
+ * @desc    List all transaction categories for a household
+ * @access  Requires auth, any member role
+ */
 spendingRouter.get(
   "/households/:householdId/categories",
   requireAuth,
@@ -105,6 +148,11 @@ spendingRouter.get(
   }
 );
 
+/**
+ * @route   POST /households/:householdId/categories
+ * @desc    Add a new transaction category to a household
+ * @access  Requires auth, 'owner' or 'member' roles
+ */
 spendingRouter.post(
   "/households/:householdId/categories",
   requireAuth,
@@ -120,6 +168,12 @@ spendingRouter.post(
   }
 );
 
+/**
+ * @route   GET /households/:householdId/spending
+ * @desc    Get aggregate household spending over a period
+ * @access  Requires auth, any member role
+ * @query   ?period=month|year|...
+ */
 spendingRouter.get(
   "/households/:householdId/spending",
   requireAuth,
@@ -136,6 +190,12 @@ spendingRouter.get(
   }
 );
 
+/**
+ * @route   GET /households/:householdId/transactions
+ * @desc    List transactions (paginated, filterable)
+ * @access  Requires auth, any member role
+ * @query   See listTransactionsSchema
+ */
 spendingRouter.get(
   "/households/:householdId/transactions",
   requireAuth,
@@ -143,14 +203,23 @@ spendingRouter.get(
   validate(listTransactionsSchema),
   async (req, res, next) => {
     try {
-      const result = await listTransactions(req.params.householdId, req.query);
-      res.json({ data: { items: result.items, nextCursor: result.nextCursor, hasMore: result.hasMore } });
+      const { items, nextCursor, hasMore } = await listTransactions(
+        req.params.householdId,
+        req.query
+      );
+      res.json({ data: { items, nextCursor, hasMore } });
     } catch (err) {
       next(err);
     }
   }
 );
 
+/**
+ * @route   POST /households/:householdId/transactions
+ * @desc    Create a transaction in a household
+ * @access  Requires auth, 'owner' or 'member' roles
+ * @body    See createTransactionSchema
+ */
 spendingRouter.post(
   "/households/:householdId/transactions",
   requireAuth,
@@ -166,13 +235,19 @@ spendingRouter.post(
   }
 );
 
+/**
+ * @route   GET /transactions/:transactionId
+ * @desc    Retrieve a single transaction by ID
+ * @access  Requires auth, accepted household member
+ * @param   transactionId
+ */
 spendingRouter.get(
   "/transactions/:transactionId",
   requireAuth,
   validate(transactionDetailSchema),
   async (req, res, next) => {
     try {
-    const transaction = await getTransaction(req.user!.id, req.params.transactionId);
+      const transaction = await getTransaction(req.user!.id, req.params.transactionId);
       res.json({ data: transaction });
     } catch (err) {
       next(err);
@@ -180,13 +255,23 @@ spendingRouter.get(
   }
 );
 
+/**
+ * @route   PATCH /transactions/:transactionId
+ * @desc    Edit (patch) an existing transaction
+ * @access  Requires auth, accepted household member
+ * @body    See patchTransactionSchema
+ */
 spendingRouter.patch(
   "/transactions/:transactionId",
   requireAuth,
   validate(patchTransactionSchema),
   async (req, res, next) => {
     try {
-      const transaction = await updateTransaction(req.user!.id, req.params.transactionId, req.body);
+      const transaction = await updateTransaction(
+        req.user!.id,
+        req.params.transactionId,
+        req.body
+      );
       res.json({ data: transaction });
     } catch (err) {
       next(err);
