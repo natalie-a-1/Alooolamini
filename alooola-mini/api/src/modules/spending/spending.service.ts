@@ -278,6 +278,11 @@ export async function createCategory(householdId: string, name: string) {
 /**
  * Creates a transaction and updates the associated account's balance.
  * Verifies membership and category validity. Upserts balance row if needed.
+ * 
+ * Validation:
+ * - Investment accounts cannot have spend transactions that exceed their balance
+ * - All account types validate that spend transactions won't exceed available balance
+ * 
  * @param userId      User who creates transaction
  * @param householdId Household in which transaction occurs
  * @param data        Transaction details (account, type, amount, merchant, etc)
@@ -300,6 +305,27 @@ export async function createTransaction(userId: string, householdId: string, dat
   });
   if (!account || account.householdId !== householdId) {
     throw notFound("Account not found");
+  }
+
+  const txnType: TxnType = data.txnType as TxnType;
+  const amount = Math.abs(data.amount);
+  const currentBalance = Number(account.balance?.currentBalance ?? 0);
+  const availableBalance = Number(account.balance?.availableBalance ?? 0);
+
+  // Validate that spend transactions won't cause negative balance for investment accounts
+  if (txnType === "spend") {
+    const newBalance = currentBalance - amount;
+    
+    // Investment accounts cannot go negative
+    if (account.type === "investment" && newBalance < 0) {
+      throw forbidden(`Insufficient balance. Cannot spend $${amount.toFixed(2)} from investment account with $${currentBalance.toFixed(2)} balance.`);
+    }
+    
+    // Other account types: warn but allow (credit accounts can go negative, etc.)
+    // For checking/savings, we could optionally enforce this too
+    if ((account.type === "checking" || account.type === "savings") && newBalance < 0) {
+      throw forbidden(`Insufficient balance. Cannot spend $${amount.toFixed(2)} from ${account.type} account with $${currentBalance.toFixed(2)} balance.`);
+    }
   }
 
   let categoryId = data.categoryId;
@@ -326,8 +352,6 @@ export async function createTransaction(userId: string, householdId: string, dat
     throw forbidden("Category not found for household");
   }
 
-  const txnType: TxnType = data.txnType as TxnType;
-  const amount = Math.abs(data.amount);
   const now = new Date();
 
   const txn = await prisma.transaction.create({
@@ -350,8 +374,6 @@ export async function createTransaction(userId: string, householdId: string, dat
   // Uses upsert so missing balance row is created.
   const isSpend = txnType === "spend";
   const delta = isSpend ? -amount : amount;
-  const currentBalance = Number(account.balance?.currentBalance ?? 0);
-  const availableBalance = Number(account.balance?.availableBalance ?? 0);
   await prisma.accountBalance.upsert({
     where: { accountId: data.accountId },
     update: {

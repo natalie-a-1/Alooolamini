@@ -1,15 +1,13 @@
 /**
  * Manages Home screen data: portfolio summary, chart state, notifications, and watchlist.
+ * Uses TanStack Query for cached server state with stale-while-revalidate pattern.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useHousehold } from '@/hooks/useHousehold';
-import { getUnreadCount } from '@/services/notifications';
-import { getWatchlist, type WatchlistItem } from '@/services/watchlist';
 import { getTimeframeDays } from '@/lib/format';
+import { useInvestmentSummary, useWatchlist, useUnreadNotificationCount } from '@/lib/useQueries';
 import { TIMEFRAMES } from '../HomeScreen.mock';
-import { getInvestmentSummary, type InvestmentSummary } from '@/services/investments';
 
 type Timeframe = (typeof TIMEFRAMES)[number];
 
@@ -20,77 +18,19 @@ export function useHomeData() {
   const { household } = useHousehold();
 
   const [timeframe, setTimeframe] = useState<Timeframe>('1M');
-  const [isLoading, setIsLoading] = useState(true);
-  const [portfolio, setPortfolio] = useState<InvestmentSummary | null>(null);
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
-
   const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
-  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
+  // Server state via TanStack Query - cached and shared across screens
+  const { data: portfolio, isLoading } = useInvestmentSummary(household?.id);
+  const { data: watchlistItems = [] } = useWatchlist();
+  const { data: unreadNotifications = 0, refetch: refetchNotifications } = useUnreadNotificationCount();
 
-  const loadPortfolio = useCallback(async () => {
-    if (!household?.id) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const data = await getInvestmentSummary(household.id, 'ALL');
-      setPortfolio(data);
-    } catch (err) {
-      setPortfolio(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [household?.id]);
-
-  useEffect(() => {
-    loadPortfolio();
-  }, [loadPortfolio]);
-
-  useFocusEffect(
-    useCallback(() => {
-      setIsLoading(true);
-      loadPortfolio();
-    }, [loadPortfolio])
-  );
-
-  useEffect(() => {
+  // Reset bar selection when timeframe changes
+  const handleTimeframeChange = (newTimeframe: Timeframe) => {
+    setTimeframe(newTimeframe);
     setSelectedBarIndex(null);
-  }, [timeframe]);
-
-  const loadUnreadCount = useCallback(async () => {
-    try {
-      const { count } = await getUnreadCount();
-      setUnreadNotifications(count);
-    } catch (error) {
-      console.error('Failed to load unread count:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadUnreadCount();
-  }, [loadUnreadCount]);
-
-  const loadWatchlist = useCallback(async () => {
-    try {
-      const items = await getWatchlist();
-      setWatchlistItems(items);
-    } catch (error) {
-      console.error('Failed to load watchlist:', error);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadWatchlist();
-    }, [loadWatchlist])
-  );
-
-  const handleNotificationsChange = useCallback(() => {
-    loadUnreadCount();
-  }, [loadUnreadCount]);
+  };
 
   const chartData = useMemo(() => {
     if (!portfolio?.snapshots?.length) return [];
@@ -149,10 +89,14 @@ export function useHomeData() {
     ? `Hi ${userName}! Based on your portfolio, consider diversifying into healthcare sector investments for sector-aligned growth potential.`
     : `Hi ${userName}! Once you start investing, we'll share personalized insights right here.`;
 
+  const handleNotificationsChange = () => {
+    refetchNotifications();
+  };
+
   return {
     isLoading,
     timeframe,
-    setTimeframe,
+    setTimeframe: handleTimeframeChange,
     portfolio,
     chartData,
     minValue,
