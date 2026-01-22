@@ -84,3 +84,14 @@ export const DEMO_MUTUAL_FUNDS = [
     matchScore: null,
   },
 ];
+
+export const DEMO_BASE_PRICES: Record<string, number> = {
+  VFIAX: 445.12,
+  VTSAX: 125.44,
+  FXAIX: 184.21,
+  FSKAX: 118.76,
+  SWPPX: 77.91,
+  FCNTX: 16.85,
+  TRBCX: 195.32,
+  PRGFX: 71.09,
+};
