@@ -51,7 +51,7 @@ type AddAccountModalProps = {
     institution?: string;
     last4?: string;
     currentBalance?: number;
-  }) => Promise<number | null>;
+  }) => Promise<string | null>;
   /** Whether form data is being submitted */
   isSubmitting: boolean;
 };

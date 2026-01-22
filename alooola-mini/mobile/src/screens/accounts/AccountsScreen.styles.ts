@@ -8,6 +8,8 @@ import { RADIUS, SPACING, SCREEN_PADDING } from '@/theme/layout';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - SCREEN_PADDING * 2;
 const CARD_HEIGHT = CARD_WIDTH * 0.58; // Credit card aspect ratio ~1.6:1
+// Snap interval = card width + right margin for perfect centering
+export const SNAP_INTERVAL = CARD_WIDTH + SPACING.md;
 
 export const ACCOUNT_COLORS = {
   checking: COLORS.accentBlue,
@@ -66,6 +68,7 @@ export const styles = StyleSheet.create({
   },
   carouselContent: {
     paddingHorizontal: SCREEN_PADDING,
+    paddingVertical: 0,
   },
   accountCard: {
     width: CARD_WIDTH,

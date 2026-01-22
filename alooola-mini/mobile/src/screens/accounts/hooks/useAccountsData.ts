@@ -54,6 +54,9 @@ export function useAccountsData() {
   /** Show/hide the modal for adding a new transaction */
   const [showAddTransactionModal, setShowAddTransactionModal] = useState(false);
 
+  /** Track the ID of the newly created account to scroll to it */
+  const [newlyCreatedAccountId, setNewlyCreatedAccountId] = useState<string | null>(null);
+
   // Server state via TanStack Query - cached and shared across screens
   const { data: accounts = [], isLoading } = useAccounts(household?.id);
   const selectedAccount = accounts[selectedIndex];
@@ -103,21 +106,20 @@ export function useAccountsData() {
    * Uses mutation which automatically invalidates accounts cache.
    *
    * @param data - Account fields from add-account modal/form
-   * @returns Index of new account if successful, else `null`
+   * @returns Account ID of new account if successful, else `null`
    */
   const handleAddAccount = async (data: AddAccountPayload) => {
     if (!household?.id) return null;
 
     try {
-      await createAccountMutation.mutateAsync({
+      const newAccount = await createAccountMutation.mutateAsync({
         householdId: household.id,
         data,
       });
-      // After mutation completes and cache is invalidated, set index to last account
-      const newIndex = Math.max(accounts.length, 0);
-      setSelectedIndex(newIndex);
+      // Store the new account ID so the screen can scroll to it after refetch
+      setNewlyCreatedAccountId(newAccount.id);
       setShowAddModal(false);
-      return newIndex;
+      return newAccount.id;
     } catch (error) {
       console.error('Failed to create account:', error);
       return null;
@@ -178,5 +180,7 @@ export function useAccountsData() {
     isLoadingCategories,
     handleViewableItemsChanged,
     viewabilityConfig: viewabilityConfig.current,
+    newlyCreatedAccountId,
+    setNewlyCreatedAccountId,
   };
 }
