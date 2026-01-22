@@ -11,3 +11,9 @@ Add an expense for an account:
 - category
 - who spent it (only household options)
 - value
+
+
+--- UI ---
+- center account cards 
+- actual storage of profile image (non local)
+- add account: align institution text

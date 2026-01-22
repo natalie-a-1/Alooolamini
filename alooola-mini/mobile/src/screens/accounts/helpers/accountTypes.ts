@@ -16,3 +16,5 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   investment: 'Invest',
   credit: 'Credit',
 };
+
+export const ACCOUNT_TYPES: AccountType[] = ['checking', 'savings', 'investment', 'credit'];

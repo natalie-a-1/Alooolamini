@@ -38,4 +38,19 @@ export function formatTime(dateString: string): string {
     return date.toLocaleDateString();
   }
 
+  export const normalizeName = (text: string) =>
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ');
+
 export const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+export const formatMoneyInput = (text: string) => {
+  const cleaned = text.replace(/\D/g, '');
+  if (!cleaned) {
+    return '';
+  }
+  const value = (parseInt(cleaned, 10) / 100).toFixed(2);
+  return value;
+};

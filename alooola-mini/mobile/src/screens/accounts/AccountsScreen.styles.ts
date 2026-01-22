@@ -397,7 +397,9 @@ export const styles = StyleSheet.create({
   categoryLabel: {
     fontSize: 12,
     fontWeight: '600',
+    lineHeight: 16,
     color: COLORS.ink,
     textAlign: 'center',
+    paddingHorizontal: SPACING.xs,
   },
 });
