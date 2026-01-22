@@ -59,8 +59,24 @@ export const listTransactionsSchema = z.object({
     attributedUserId: z.string().uuid().optional(),
     dateFrom: z.string().optional(),
     dateTo: z.string().optional(),
-    txnType: z.enum(["debit", "credit"]).optional(),
+    txnType: z.enum(["spend", "receive"]).optional(),
   }).optional().default({}),
+});
+
+/** Validation schema for create transaction. */
+export const createTransactionSchema = z.object({
+  body: z.object({
+    accountId: z.string().uuid(),
+    txnType: z.enum(["spend", "receive"]),
+    amount: z.number().positive(),
+    merchant: z.string().min(1).max(200),
+    currency: z.string().optional(),
+    categoryId: z.string().uuid().optional(),
+    note: z.string().max(500).optional(),
+    attributedUserId: z.string().uuid().optional(),
+  }),
+  params: z.object({ householdId: z.string().uuid() }),
+  query: z.object({}).optional().default({}),
 });
 
 /** Validation schema for transaction detail. */

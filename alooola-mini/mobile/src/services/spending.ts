@@ -34,12 +34,13 @@ export interface Account {
 
 export interface Transaction {
   id: string;
-  txnType: 'debit' | 'credit';
+  accountId: string;
+  householdId: string;
+  txnType: 'spend' | 'receive';
   amount: number;
   currency: string;
   merchant: string;
   txnDate: string;
-  note: string | null;
   category: {
     id: string;
     name: string;
@@ -54,6 +55,11 @@ export interface RewardAccount {
   balance: number;
   lifetimeEarned: number;
   rewardRatePct: number;
+}
+
+export interface Category {
+  id: string;
+  name: string;
 }
 
 /**
@@ -92,6 +98,35 @@ export async function getTransactions(
   if (options?.accountId) params.set('accountId', options.accountId);
   const query = params.toString() ? `?${params.toString()}` : '';
   return apiGet(`/households/${householdId}/transactions${query}`);
+}
+
+/**
+ * Create a new transaction for a household account.
+ */
+export async function createTransaction(
+  householdId: string,
+  data: {
+    accountId: string;
+    txnType: 'spend' | 'receive';
+    amount: number;
+    currency?: string;
+    merchant: string;
+    categoryId?: string | null;
+    note?: string | null;
+    attributedUserId?: string | null;
+  }
+): Promise<Transaction> {
+  return apiPost<Transaction>(`/households/${householdId}/transactions`, {
+    currency: 'USD',
+    ...data,
+  });
+}
+
+/**
+ * Get categories for a household.
+ */
+export async function getCategories(householdId: string): Promise<Category[]> {
+  return apiGet<Category[]>(`/households/${householdId}/categories`);
 }
 
 /**

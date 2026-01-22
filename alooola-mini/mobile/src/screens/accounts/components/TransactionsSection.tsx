@@ -2,7 +2,7 @@
  * Transaction list section with loading and empty states.
  */
 import React from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { COLORS } from '@/theme/colors';
 import { type Transaction } from '@/services/spending';
@@ -12,12 +12,19 @@ import { TransactionRow } from './TransactionRow';
 type TransactionsSectionProps = {
   isLoading: boolean;
   transactions: Transaction[];
+  onPressAdd: () => void;
 };
 
-export function TransactionsSection({ isLoading, transactions }: TransactionsSectionProps) {
+export function TransactionsSection({ isLoading, transactions, onPressAdd }: TransactionsSectionProps) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Transactions</Text>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>Transactions</Text>
+        <Pressable style={styles.addButton} onPress={onPressAdd}>
+          <Icon name="plus" size={14} color={COLORS.surface} />
+          <Text style={styles.addButtonText}>Add</Text>
+        </Pressable>
+      </View>
       {isLoading ? (
         <ActivityIndicator color={COLORS.ink} />
       ) : transactions.length > 0 ? (

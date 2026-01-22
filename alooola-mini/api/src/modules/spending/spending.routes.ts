@@ -8,6 +8,7 @@ import { validate } from "../../middleware/validate";
 import {
   accountDetailSchema,
   createAccountSchema,
+  createTransactionSchema,
   createCategorySchema,
   listAccountsSchema,
   listCategoriesSchema,
@@ -19,6 +20,7 @@ import {
 } from "./spending.schemas";
 import {
   createAccount,
+  createTransaction,
   createCategory,
   getAccount,
   getInvestmentSummary,
@@ -143,6 +145,21 @@ spendingRouter.get(
     try {
       const result = await listTransactions(req.params.householdId, req.query);
       res.json({ data: { items: result.items, nextCursor: result.nextCursor, hasMore: result.hasMore } });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+spendingRouter.post(
+  "/households/:householdId/transactions",
+  requireAuth,
+  requireHouseholdRole(["owner", "member"]),
+  validate(createTransactionSchema),
+  async (req, res, next) => {
+    try {
+      const txn = await createTransaction(req.user!.id, req.params.householdId, req.body);
+      res.status(201).json({ data: txn });
     } catch (err) {
       next(err);
     }

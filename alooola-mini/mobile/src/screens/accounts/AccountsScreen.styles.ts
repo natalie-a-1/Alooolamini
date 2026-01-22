@@ -17,6 +17,13 @@ export const ACCOUNT_COLORS = {
 } as const;
 
 export const styles = StyleSheet.create({
+  detailText: {
+    fontSize: 13,
+    color: COLORS.subtleInk,
+    textAlign: 'center',
+    marginBottom: SPACING.xl,
+    lineHeight: 20,
+  },
   // Header
   header: {
     flexDirection: 'row',
@@ -159,11 +166,16 @@ export const styles = StyleSheet.create({
   section: {
     marginBottom: SPACING.lg,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '300',
     color: COLORS.ink,
-    marginBottom: SPACING.lg,
   },
   transactionList: {
     gap: SPACING.sm,
@@ -276,6 +288,7 @@ export const styles = StyleSheet.create({
     borderTopRightRadius: RADIUS.xxl,
     padding: SPACING.xl,
     paddingBottom: SPACING.xxxl,
+    maxHeight: '85%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -351,5 +364,40 @@ export const styles = StyleSheet.create({
     color: COLORS.surface,
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Category grid for add-transaction modal
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  categoryTile: {
+    flexBasis: '31%',
+    borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  categoryTileSelected: {
+    borderColor: COLORS.ink,
+    backgroundColor: COLORS.surface,
+  },
+  categoryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eef2ff',
+  },
+  categoryLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.ink,
+    textAlign: 'center',
   },
 });

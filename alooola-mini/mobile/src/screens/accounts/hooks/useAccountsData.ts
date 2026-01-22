@@ -2,8 +2,18 @@
  * Manages accounts data: accounts list, selection, transactions, add account modal state.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { useHousehold } from '@/hooks/useHousehold';
-import { createAccount, getAccounts, getTransactions, type Account, type Transaction } from '@/services/spending';
+import {
+  createAccount,
+  createTransaction,
+  getAccounts,
+  getTransactions,
+  type Account,
+  type Transaction,
+  type Category,
+  getCategories,
+} from '@/services/spending';
 
 export type AccountType = 'checking' | 'savings' | 'investment' | 'credit';
 
@@ -17,6 +27,7 @@ type AddAccountPayload = {
 
 export function useAccountsData() {
   const { household } = useHousehold();
+  const { user } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -25,6 +36,10 @@ export function useAccountsData() {
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAddTransactionModal, setShowAddTransactionModal] = useState(false);
+  const [isSubmittingTransaction, setIsSubmittingTransaction] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
   const viewabilityConfig = useRef({
     viewAreaCoveragePercentThreshold: 50,
@@ -80,6 +95,27 @@ export function useAccountsData() {
     loadTransactions();
   }, [loadTransactions]);
 
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!household?.id) {
+        setCategories([]);
+        return;
+      }
+      setIsLoadingCategories(true);
+      try {
+        const data = await getCategories(household.id);
+        setCategories(data);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+        setCategories([]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, [household?.id]);
+
   const handleViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
       if (viewableItems.length > 0 && viewableItems[0].index !== null) {
@@ -111,6 +147,32 @@ export function useAccountsData() {
     [household?.id]
   );
 
+  const handleAddTransaction = useCallback(
+    async (data: { txnType: 'spend' | 'receive'; amount: number; merchant: string; categoryId?: string }) => {
+      if (!household?.id || !selectedAccount) return;
+      setIsSubmittingTransaction(true);
+      try {
+        await createTransaction(household.id, {
+          accountId: selectedAccount.id,
+          txnType: data.txnType,
+          amount: data.amount,
+          merchant: data.merchant,
+          categoryId: data.categoryId || undefined,
+          attributedUserId: user?.id ?? null,
+        });
+        const refreshedAccounts = await getAccounts(household.id);
+        setAccounts(refreshedAccounts);
+        await loadTransactions();
+        setShowAddTransactionModal(false);
+      } catch (error) {
+        console.error('Failed to create transaction:', error);
+      } finally {
+        setIsSubmittingTransaction(false);
+      }
+    },
+    [household?.id, loadTransactions, selectedAccount, user?.id]
+  );
+
   return {
     isLoading,
     accounts,
@@ -124,6 +186,12 @@ export function useAccountsData() {
     setShowAddModal,
     isSubmitting,
     handleAddAccount,
+    showAddTransactionModal,
+    setShowAddTransactionModal,
+    isSubmittingTransaction,
+    handleAddTransaction,
+    categories,
+    isLoadingCategories,
     handleViewableItemsChanged,
     viewabilityConfig: viewabilityConfig.current,
   };

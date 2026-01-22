@@ -366,7 +366,7 @@ async function main() {
           accountId: account.id,
           attributedUserId: txn.userId,
           categoryId: category.id,
-          txnType: TxnType.debit,
+          txnType: TxnType.spend,
           amount: txn.amount,
           currency: "USD",
           merchant: txn.merchant,
@@ -384,13 +384,13 @@ async function main() {
         merchant: "Direct Deposit - Salary",
         amount: money(5000),
         txnDate: addDays(seedNow, -3),
-        txnType: TxnType.credit,
+        txnType: TxnType.receive,
       },
       {
         merchant: "Interest Payment",
         amount: money(12.50),
         txnDate: addDays(seedNow, -14),
-        txnType: TxnType.credit,
+        txnType: TxnType.receive,
       },
     ];
 

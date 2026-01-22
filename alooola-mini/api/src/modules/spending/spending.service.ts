@@ -2,9 +2,53 @@
  * Business logic for the spending module.
  */
 import { prisma } from "../../db/prisma";
+import { Prisma } from "@prisma/client";
+type TxnType = "spend" | "receive";
 import { decodeCursor, encodeCursor, buildCursorResponse } from "../../lib/pagination";
 import { notFound, forbidden } from "../../lib/errors";
 import { normalizeAccountBalance } from "../../lib/normalizers/account";
+
+type TransactionDto = {
+  id: string;
+  accountId: string;
+  householdId: string;
+  txnType: TxnType;
+  amount: number;
+  currency: string;
+  merchant: string;
+  txnDate: string;
+  category: { id: string; name: string } | null;
+  attributedUser: { id: string; name: string } | null;
+};
+
+type TransactionWithRelations = {
+  id: string;
+  accountId: string;
+  householdId: string;
+  txnType: TxnType;
+  amount: Prisma.Decimal | number;
+  currency: string;
+  merchant: string;
+  txnDate: Date;
+  category?: { id: string; name: string | null } | null;
+  attributedUser?: { id: string; name: string | null } | null;
+};
+
+function transactionToDto(txn: TransactionWithRelations): TransactionDto {
+  const amountValue = typeof txn.amount === "number" ? txn.amount : txn.amount.toNumber();
+  return {
+    id: txn.id,
+    accountId: txn.accountId,
+    householdId: txn.householdId,
+    txnType: txn.txnType,
+    amount: amountValue,
+    currency: txn.currency,
+    merchant: txn.merchant,
+    txnDate: txn.txnDate.toISOString(),
+    category: txn.category ? { id: txn.category.id, name: txn.category.name ?? "" } : null,
+    attributedUser: txn.attributedUser ? { id: txn.attributedUser.id, name: txn.attributedUser.name ?? "" } : null,
+  };
+}
 
 async function ensureHouseholdAccess(userId: string, householdId: string) {
   const membership = await prisma.householdMember.findFirst({
@@ -166,6 +210,93 @@ export async function createCategory(householdId: string, name: string) {
   });
 }
 
+/** Create transaction and update account balance. */
+export async function createTransaction(userId: string, householdId: string, data: {
+  accountId: string;
+  txnType: "spend" | "receive";
+  amount: number;
+  merchant: string;
+  currency?: string;
+  categoryId?: string;
+  note?: string;
+  attributedUserId?: string | null;
+}) {
+  await ensureHouseholdAccess(userId, householdId);
+
+  const account = await prisma.account.findUnique({
+    where: { id: data.accountId },
+    include: { balance: true },
+  });
+  if (!account || account.householdId !== householdId) {
+    throw notFound("Account not found");
+  }
+
+  let categoryId = data.categoryId;
+  if (!categoryId) {
+    const fallback = await prisma.category.upsert({
+      where: {
+        householdId_name: {
+          householdId,
+          name: "Other",
+        },
+      },
+      update: {},
+      create: { householdId, name: "Other" },
+    });
+    categoryId = fallback.id;
+  }
+
+  // Ensure category belongs to household
+  const category = await prisma.category.findFirst({
+    where: { id: categoryId, householdId },
+  });
+  if (!category) {
+    throw forbidden("Category not found for household");
+  }
+
+  const txnType: TxnType = data.txnType as TxnType;
+  const amount = Math.abs(data.amount);
+  const now = new Date();
+
+  const txn = await prisma.transaction.create({
+    data: {
+      householdId,
+      accountId: data.accountId,
+      txnType,
+      amount,
+      merchant: data.merchant,
+      currency: data.currency ?? "USD",
+      txnDate: now,
+      categoryId,
+      note: data.note,
+      attributedUserId: data.attributedUserId ?? userId,
+    },
+    include: { account: true, category: true, attributedUser: true },
+  });
+
+  // Update balances: spend reduces, receive increases. Use upsert so we don't error if a balance row is missing.
+  const isSpend = txnType === "spend";
+  const delta = isSpend ? -amount : amount;
+  const currentBalance = Number(account.balance?.currentBalance ?? 0);
+  const availableBalance = Number(account.balance?.availableBalance ?? 0);
+  await prisma.accountBalance.upsert({
+    where: { accountId: data.accountId },
+    update: {
+      currentBalance: currentBalance + delta,
+      availableBalance: availableBalance + delta,
+      asOf: now,
+    },
+    create: {
+      accountId: data.accountId,
+      currentBalance: currentBalance + delta,
+      availableBalance: availableBalance + delta,
+      asOf: now,
+    },
+  });
+
+  return transactionToDto(txn);
+}
+
 /** List transactions. */
 export async function listTransactions(householdId: string, options: {
   cursor?: string;
@@ -176,7 +307,7 @@ export async function listTransactions(householdId: string, options: {
   attributedUserId?: string;
   dateFrom?: string;
   dateTo?: string;
-  txnType?: "debit" | "credit";
+  txnType?: TxnType;
 }) {
   const limit = options.limit ?? 25;
   const where: Record<string, unknown> = { householdId };
@@ -223,7 +354,10 @@ export async function listTransactions(householdId: string, options: {
     encodeCursor([item.txnDate, item.id])
   );
 
-  return cursorResponse;
+  return {
+    ...cursorResponse,
+    items: cursorResponse.items.map(transactionToDto),
+  };
 }
 
 /** Get transaction. */
@@ -236,7 +370,7 @@ export async function getTransaction(userId: string, transactionId: string) {
     throw notFound("Transaction not found");
   }
   await ensureHouseholdAccess(userId, txn.householdId);
-  return txn;
+  return transactionToDto(txn);
 }
 
 /** Update transaction. */
@@ -288,7 +422,7 @@ export async function getSpendingSummary(householdId: string, period?: string) {
   const transactions = await prisma.transaction.findMany({
     where: {
       householdId,
-      txnType: "debit",
+      txnType: "spend",
       txnDate: { gte: startDate, lte: now },
     },
     include: { category: true },

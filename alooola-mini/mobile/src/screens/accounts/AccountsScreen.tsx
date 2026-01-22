@@ -11,6 +11,7 @@ import { AddAccountModal } from './components/AddAccountModal';
 import { EmptyAccountsState } from './components/EmptyAccountsState';
 import { PageIndicator } from './components/PageIndicator';
 import { TransactionsSection } from './components/TransactionsSection';
+import { AddTransactionModal } from './components/AddTransactionModal';
 import { useAccountsData } from './hooks/useAccountsData';
 import { styles } from './AccountsScreen.styles';
 
@@ -27,6 +28,12 @@ export function AccountsScreen() {
     setShowAddModal,
     isSubmitting,
     handleAddAccount,
+    showAddTransactionModal,
+    setShowAddTransactionModal,
+    isSubmittingTransaction,
+    handleAddTransaction,
+    categories,
+    isLoadingCategories,
     handleViewableItemsChanged,
     viewabilityConfig,
   } = useAccountsData();
@@ -68,7 +75,11 @@ export function AccountsScreen() {
 
           <PageIndicator count={accounts.length} activeIndex={selectedIndex} />
 
-          <TransactionsSection isLoading={isLoadingTransactions} transactions={transactions} />
+          <TransactionsSection
+            isLoading={isLoadingTransactions}
+            transactions={transactions}
+            onPressAdd={() => setShowAddTransactionModal(true)}
+          />
         </>
       ) : (
         <EmptyAccountsState onPressAdd={() => setShowAddModal(true)} />
@@ -79,6 +90,15 @@ export function AccountsScreen() {
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddAccount}
         isSubmitting={isSubmitting}
+      />
+
+      <AddTransactionModal
+        visible={showAddTransactionModal}
+        onClose={() => setShowAddTransactionModal(false)}
+        onSubmit={handleAddTransaction}
+        isSubmitting={isSubmittingTransaction}
+        categories={categories}
+        isLoadingCategories={isLoadingCategories}
       />
     </Screen>
   );

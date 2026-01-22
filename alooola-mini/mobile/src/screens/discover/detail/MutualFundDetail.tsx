@@ -4,7 +4,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { Screen } from '@/components/Screen';
-import { Icon } from '@/components/Icon';
 import { COLORS } from '@/theme/colors';
 import {
   getMutualFundPerformance,

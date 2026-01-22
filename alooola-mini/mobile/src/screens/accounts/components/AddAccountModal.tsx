@@ -2,16 +2,8 @@
  * Modal for adding a new account.
  */
 import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, ScrollView, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { COLORS } from '@/theme/colors';
 import { styles, ACCOUNT_COLORS } from '../AccountsScreen.styles';
@@ -32,11 +24,22 @@ type AddAccountModalProps = {
 };
 
 export function AddAccountModal({ visible, onClose, onSubmit, isSubmitting }: AddAccountModalProps) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('checking');
   const INSTITUTIONS = ['Chase', 'Bank of America', 'Wells Fargo', 'Citi'];
   const [institution, setInstitution] = useState(INSTITUTIONS[0]);
   const [currentBalance, setCurrentBalance] = useState('');
+
+  const formatMoneyInput = (text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    if (!cleaned) {
+      setCurrentBalance('');
+      return;
+    }
+    const value = (parseInt(cleaned, 10) / 100).toFixed(2);
+    setCurrentBalance(value);
+  };
 
   const canSubmit = name.trim().length > 0 && !isSubmitting;
 
@@ -59,10 +62,16 @@ export function AddAccountModal({ visible, onClose, onSubmit, isSubmitting }: Ad
   const accountTypes: AccountType[] = ['checking', 'savings', 'investment', 'credit'];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
+      <View style={styles.modalOverlay}>
         <Pressable style={styles.modalOverlay} onPress={onClose}>
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 320 }}
+              keyboardDismissMode="interactive"
+            >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Account</Text>
               <Pressable style={styles.modalCloseButton} onPress={onClose}>
@@ -125,7 +134,7 @@ export function AddAccountModal({ visible, onClose, onSubmit, isSubmitting }: Ad
               <TextInput
                 style={styles.textInput}
                 value={currentBalance}
-                onChangeText={(text) => setCurrentBalance(text.replace(/[^0-9.]/g, ''))}
+                onChangeText={formatMoneyInput}
                 placeholder="0.00"
                 placeholderTextColor={COLORS.subtleInk}
                 keyboardType="decimal-pad"
@@ -139,9 +148,10 @@ export function AddAccountModal({ visible, onClose, onSubmit, isSubmitting }: Ad
             >
               {isSubmitting ? <ActivityIndicator color={COLORS.surface} /> : <Text style={styles.submitButtonText}>Add Account</Text>}
             </Pressable>
+            </ScrollView>
           </Pressable>
         </Pressable>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

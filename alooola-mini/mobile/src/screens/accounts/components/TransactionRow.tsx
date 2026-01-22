@@ -14,7 +14,7 @@ type TransactionRowProps = {
 };
 
 export function TransactionRow({ transaction }: TransactionRowProps) {
-  const isDebit = transaction.txnType === 'debit';
+  const isDebit = transaction.txnType === 'spend';
   const amount = isDebit ? -transaction.amount : transaction.amount;
   const userName = transaction.attributedUser?.name || 'Unknown';
   const date = formatDate(transaction.txnDate);
