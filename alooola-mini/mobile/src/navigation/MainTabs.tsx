@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeScreen } from '@/screens/home';
 import { DiscoverScreen } from '@/screens/discover';
 import { AccountsScreen } from '@/screens/accounts';
-import { SpendingScreen } from '@/screens/spending';
+import { AssistantScreen } from '@/screens/assistant';
 import { ProfileScreen } from '@/screens/profile';
 import { Icon } from '@/components/Icon';
 import { COLORS } from '@/theme/colors';
@@ -21,7 +21,7 @@ const ICONS: Record<string, string> = {
   Home: 'home',
   Discover: 'search',
   Accounts: 'wallet',
-  Spending: 'creditCard',
+  Assistant: 'messageCircle',
   Profile: 'grid',
 };
 
@@ -53,7 +53,7 @@ export function MainTabs() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Accounts" component={AccountsScreen} />
-      <Tab.Screen name="Spending" component={SpendingScreen} />
+      <Tab.Screen name="Assistant" component={AssistantScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

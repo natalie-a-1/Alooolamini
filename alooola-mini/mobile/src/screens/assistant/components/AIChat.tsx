@@ -1,12 +1,12 @@
 /**
- * AI chat experience for the Discover screen.
+ * AI chat experience for the Assistant screen.
  */
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { COLORS } from '@/theme/colors';
-import { styles } from '../DiscoverScreen.styles';
-import { INITIAL_AI_MESSAGE, QUICK_ACTIONS } from '../DiscoverScreen.mock';
+import { styles } from '../AssistantScreen.styles';
+import { INITIAL_AI_MESSAGE, QUICK_ACTIONS } from '../AssistantScreen.mock';
 import { ScheduleAdvisor } from './ScheduleAdvisor';
 
 export interface Message {
@@ -18,7 +18,7 @@ export interface Message {
 }
 
 type AIChatProps = {
-  onClose: () => void;
+  onClose?: () => void;
 };
 
 export function AIChat({ onClose }: AIChatProps) {
@@ -77,7 +77,21 @@ export function AIChat({ onClose }: AIChatProps) {
   }
 
   return (
-    <ScreenWrapper onClose={onClose}>
+    <View style={styles.container}>
+      <View style={styles.chatHeader}>
+        {onClose ? (
+          <Pressable onPress={onClose} style={styles.backButton}>
+            <Icon name="chevronRight" size={18} color={COLORS.ink} style={styles.backIcon} />
+          </Pressable>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
+        <View style={styles.chatHeaderText}>
+          <Text style={styles.chatTitle}>AI Assistant</Text>
+          <Text style={styles.chatSubtitle}>Ask anything</Text>
+        </View>
+      </View>
+
       <ScrollView style={styles.chatMessages} contentContainerStyle={styles.chatMessagesContent}>
         {messages.map((message) => (
           <View key={message.id}>
@@ -120,23 +134,6 @@ export function AIChat({ onClose }: AIChatProps) {
           <Icon name="send" size={14} color={inputText.trim() ? COLORS.surface : COLORS.subtleInk} />
         </Pressable>
       </View>
-    </ScreenWrapper>
-  );
-}
-
-function ScreenWrapper({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.chatHeader}>
-        <Pressable onPress={onClose} style={styles.backButton}>
-          <Icon name="chevronRight" size={18} color={COLORS.ink} style={styles.backIcon} />
-        </Pressable>
-        <View style={styles.chatHeaderText}>
-          <Text style={styles.chatTitle}>AI Assistant</Text>
-          <Text style={styles.chatSubtitle}>Ask anything</Text>
-        </View>
-      </View>
-      {children}
     </View>
   );
 }

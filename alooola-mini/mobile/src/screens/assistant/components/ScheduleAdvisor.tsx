@@ -5,12 +5,12 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { COLORS } from '@/theme/colors';
-import { styles } from '../DiscoverScreen.styles';
-import { AVAILABLE_DATES, AVAILABLE_TIMES } from '../DiscoverScreen.mock';
+import { styles } from '../AssistantScreen.styles';
+import { AVAILABLE_DATES, AVAILABLE_TIMES } from '../AssistantScreen.mock';
 
 type ScheduleAdvisorProps = {
   onBack: () => void;
-  onClose: () => void;
+  onClose?: () => void;
 };
 
 export function ScheduleAdvisor({ onBack, onClose }: ScheduleAdvisorProps) {
@@ -18,11 +18,15 @@ export function ScheduleAdvisor({ onBack, onClose }: ScheduleAdvisorProps) {
   const [selectedTime, setSelectedTime] = useState('');
 
   const handleConfirm = () => {
-    onClose();
+    if (onClose) {
+      onClose();
+    } else {
+      onBack();
+    }
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       <View style={styles.chatHeader}>
         <Pressable onPress={onBack} style={styles.backButton}>
           <Icon name="chevronRight" size={18} color={COLORS.ink} style={styles.backIcon} />
@@ -67,10 +71,7 @@ export function ScheduleAdvisor({ onBack, onClose }: ScheduleAdvisorProps) {
 
       <View style={styles.timeFooter}>
         <Pressable
-          style={[
-            styles.confirmButton,
-            (!selectedDate || !selectedTime) && styles.confirmButtonDisabled,
-          ]}
+          style={[styles.confirmButton, (!selectedDate || !selectedTime) && styles.confirmButtonDisabled]}
           onPress={handleConfirm}
           disabled={!selectedDate || !selectedTime}
         >

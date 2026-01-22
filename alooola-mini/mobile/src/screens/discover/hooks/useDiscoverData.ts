@@ -1,9 +1,7 @@
 /**
- * Manages Discover screen data: mutual fund list, selection, demo fallback, AI chat state, and navigation param handling.
+ * Manages Discover screen data: mutual fund list, selection, and demo fallback.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import type { MainTabScreenProps } from '@/navigation/types';
 import {
   getMutualFunds,
   type MutualFund,
@@ -11,7 +9,7 @@ import {
   type MutualFundPerformancePoint,
   type MutualFundQuote,
 } from '@/services/mutualFunds';
-import { DEMO_MUTUAL_FUNDS, INITIAL_AI_MESSAGE } from '../DiscoverScreen.mock';
+import { DEMO_MUTUAL_FUNDS } from '../DiscoverScreen.mock';
 import { buildDemoPerformance, buildDemoQuote } from '../utils/demoData';
 
 type UseDiscoverDataReturn = {
@@ -22,18 +20,11 @@ type UseDiscoverDataReturn = {
   mutualFunds: MutualFund[];
   selectedFund: MutualFund | null;
   selectFund: (fund: MutualFund | null) => void;
-  showAIChat: boolean;
-  openAIChat: () => void;
-  closeAIChat: () => void;
   demoPerformance: (fund: MutualFund) => MutualFundPerformance;
   demoQuote: (fund: MutualFund, points?: MutualFundPerformancePoint[]) => MutualFundQuote;
 };
 
 export function useDiscoverData(): UseDiscoverDataReturn {
-  const route = useRoute<MainTabScreenProps<'Discover'>['route']>();
-  const navigation = useNavigation<MainTabScreenProps<'Discover'>['navigation']>();
-
-  const [showAIChat, setShowAIChat] = useState(false);
   const [mutualFunds, setMutualFunds] = useState<MutualFund[]>([]);
   const [selectedFund, setSelectedFund] = useState<MutualFund | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -68,18 +59,6 @@ export function useDiscoverData(): UseDiscoverDataReturn {
     loadMutualFunds();
   }, [loadMutualFunds]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (route.params?.openAIChat) {
-        setShowAIChat(true);
-        navigation.setParams({ openAIChat: undefined });
-      }
-    }, [route.params, navigation])
-  );
-
-  const openAIChat = useCallback(() => setShowAIChat(true), []);
-  const closeAIChat = useCallback(() => setShowAIChat(false), []);
-
   const demoPerformance = useCallback((fund: MutualFund) => buildDemoPerformance(fund), []);
   const demoQuote = useCallback((fund: MutualFund, points?: MutualFundPerformancePoint[]) => buildDemoQuote(fund, points), []);
 
@@ -92,24 +71,9 @@ export function useDiscoverData(): UseDiscoverDataReturn {
       mutualFunds,
       selectedFund,
       selectFund: setSelectedFund,
-      showAIChat,
-      openAIChat,
-      closeAIChat,
       demoPerformance,
       demoQuote,
     }),
-    [
-      closeAIChat,
-      demoPerformance,
-      demoQuote,
-      errorMessage,
-      isDemoList,
-      isLoading,
-      listNotice,
-      mutualFunds,
-      openAIChat,
-      selectedFund,
-      showAIChat,
-    ]
+    [demoPerformance, demoQuote, errorMessage, isDemoList, isLoading, listNotice, mutualFunds, selectedFund]
   );
 }

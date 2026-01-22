@@ -5,4 +5,4 @@ export { LoginScreen } from './login';
 export { OnboardingScreen } from './onboarding';
 export { OpportunityDetailScreen } from './opportunityDetail';
 export { ProfileScreen } from './profile';
-export { SpendingScreen } from './spending';
+export { AssistantScreen } from './assistant';

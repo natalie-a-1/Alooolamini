@@ -1,13 +1,11 @@
 /**
- * Discover screen and AI assistant flow.
+ * Discover screen listing mutual funds with detail view.
  */
 import React from 'react';
 import { Screen } from '@/components/Screen';
 import { useDiscoverData } from './hooks/useDiscoverData';
 import { DiscoverHeader } from './components/DiscoverHeader';
-import { AskAIButton } from './components/AskAIButton';
 import { MutualFundList } from './components/MutualFundList';
-import { AIChat } from './components/AIChat';
 import { MutualFundDetail } from './detail/MutualFundDetail';
 
 export function DiscoverScreen() {
@@ -19,16 +17,9 @@ export function DiscoverScreen() {
     mutualFunds,
     selectedFund,
     selectFund,
-    showAIChat,
-    openAIChat,
-    closeAIChat,
     demoPerformance,
     demoQuote,
   } = useDiscoverData();
-
-  if (showAIChat) {
-    return <AIChat onClose={closeAIChat} />;
-  }
 
   if (selectedFund) {
     return (
@@ -45,7 +36,6 @@ export function DiscoverScreen() {
   return (
     <Screen>
       <DiscoverHeader />
-      <AskAIButton onPress={openAIChat} />
       <MutualFundList
         funds={mutualFunds}
         isLoading={isLoading}
