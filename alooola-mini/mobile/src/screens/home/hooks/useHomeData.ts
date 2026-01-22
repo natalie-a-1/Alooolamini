@@ -6,10 +6,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/hooks/useAuth';
 import { useHousehold } from '@/hooks/useHousehold';
 import { getUnreadCount } from '@/services/notifications';
-import { getPortfolioSummary, type PortfolioSummary } from '@/services/portfolios';
 import { getWatchlist, type WatchlistItem } from '@/services/watchlist';
 import { getTimeframeDays } from '@/lib/format';
 import { TIMEFRAMES } from '../HomeScreen.mock';
+import { getInvestmentSummary, type InvestmentSummary } from '@/services/investments';
 
 type Timeframe = (typeof TIMEFRAMES)[number];
 
@@ -21,7 +21,7 @@ export function useHomeData() {
 
   const [timeframe, setTimeframe] = useState<Timeframe>('1M');
   const [isLoading, setIsLoading] = useState(true);
-  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
+  const [portfolio, setPortfolio] = useState<InvestmentSummary | null>(null);
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -36,7 +36,7 @@ export function useHomeData() {
     }
 
     try {
-      const data = await getPortfolioSummary(household.id, 'ALL');
+      const data = await getInvestmentSummary(household.id, 'ALL');
       setPortfolio(data);
     } catch (err) {
       setPortfolio(null);
@@ -48,6 +48,13 @@ export function useHomeData() {
   useEffect(() => {
     loadPortfolio();
   }, [loadPortfolio]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsLoading(true);
+      loadPortfolio();
+    }, [loadPortfolio])
+  );
 
   useEffect(() => {
     setSelectedBarIndex(null);

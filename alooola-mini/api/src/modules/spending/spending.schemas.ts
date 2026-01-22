@@ -89,3 +89,12 @@ export const spendingSummarySchema = z.object({
     period: z.string().optional(),
   }).optional().default({}),
 });
+
+/** Validation schema for investment summary. */
+export const investmentSummarySchema = z.object({
+  body: z.object({}).optional().default({}),
+  params: z.object({ householdId: z.string().uuid() }),
+  query: z.object({
+    range: z.enum(["1M", "3M", "6M", "1Y", "ALL"]).optional(),
+  }).optional().default({}),
+});

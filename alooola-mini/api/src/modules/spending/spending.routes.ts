@@ -15,11 +15,13 @@ import {
   patchTransactionSchema,
   spendingSummarySchema,
   transactionDetailSchema,
+  investmentSummarySchema,
 } from "./spending.schemas";
 import {
   createAccount,
   createCategory,
   getAccount,
+  getInvestmentSummary,
   getSpendingSummary,
   getTransaction,
   listAccounts,
@@ -55,6 +57,22 @@ spendingRouter.post(
     try {
       const account = await createAccount(req.params.householdId, req.body);
       res.status(201).json({ data: account });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+spendingRouter.get(
+  "/households/:householdId/investments/summary",
+  requireAuth,
+  requireHouseholdRole(["owner", "member", "viewer"]),
+  validate(investmentSummarySchema),
+  async (req, res, next) => {
+    try {
+      const range = typeof req.query.range === "string" ? req.query.range : undefined;
+      const summary = await getInvestmentSummary(req.user!.id, req.params.householdId, range);
+      res.json({ data: summary });
     } catch (err) {
       next(err);
     }

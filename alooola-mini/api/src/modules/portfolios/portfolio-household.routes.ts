@@ -6,7 +6,7 @@ import { requireAuth } from "../../middleware/auth";
 import { requireHouseholdRole } from "../../middleware/requireHouseholdRole";
 import { validate } from "../../middleware/validate";
 import { createPositionSchema, listPositionsSchema, listSnapshotsSchema } from "./portfolios.schemas";
-import { createPosition, listPositions, listSnapshots, getPortfolioSummary } from "./portfolios.service";
+import { createPosition, listPositions, listSnapshots } from "./portfolios.service";
 
 /** Router for portfolio household routes. */
 export const portfolioHouseholdRouter = Router();
@@ -57,18 +57,3 @@ portfolioHouseholdRouter.get(
   }
 );
 
-portfolioHouseholdRouter.get(
-  "/households/:householdId/portfolio-summary",
-  requireAuth,
-  requireHouseholdRole(["owner", "member", "viewer"]),
-  validate(listSnapshotsSchema),
-  async (req, res, next) => {
-    try {
-      const range = typeof req.query.range === "string" ? req.query.range : undefined;
-      const summary = await getPortfolioSummary(req.user!.id, req.params.householdId, range);
-      res.json({ data: summary });
-    } catch (err) {
-      next(err);
-    }
-  }
-);

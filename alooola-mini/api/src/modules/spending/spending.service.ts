@@ -15,6 +15,28 @@ async function ensureHouseholdAccess(userId: string, householdId: string) {
   }
 }
 
+function rangeToDate(range?: string) {
+  if (!range || range === "ALL") return null;
+  const now = new Date();
+  const date = new Date(now.getTime());
+  switch (range) {
+    case "1M":
+      date.setMonth(date.getMonth() - 1);
+      return date;
+    case "3M":
+      date.setMonth(date.getMonth() - 3);
+      return date;
+    case "6M":
+      date.setMonth(date.getMonth() - 6);
+      return date;
+    case "1Y":
+      date.setFullYear(date.getFullYear() - 1);
+      return date;
+    default:
+      return null;
+  }
+}
+
 /** List accounts. */
 export async function listAccounts(householdId: string) {
   const accounts = await prisma.account.findMany({
@@ -71,6 +93,62 @@ export async function getAccount(userId: string, accountId: string) {
   }
   await ensureHouseholdAccess(userId, account.householdId);
   return normalizeAccountBalance(account);
+}
+
+async function upsertInvestmentSnapshot(userId: string, householdId: string, totalValue: number) {
+  const latest = await prisma.portfolioSnapshot.findFirst({
+    where: { userId, householdId, portfolioId: null },
+    orderBy: { asOf: "desc" },
+  });
+
+  const latestValue = latest ? Number(latest.totalValue) : null;
+  if (latestValue === totalValue) return;
+
+  await prisma.portfolioSnapshot.create({
+    data: {
+      userId,
+      householdId,
+      portfolioId: null,
+      totalValue,
+      gainAmount: null,
+      gainPercent: null,
+      asOf: new Date(),
+    },
+  });
+}
+
+/** Get aggregated investment summary for a household (investment accounts only). */
+export async function getInvestmentSummary(userId: string, householdId: string, range?: string) {
+  await ensureHouseholdAccess(userId, householdId);
+  const accounts = await prisma.account.findMany({
+    where: { householdId, type: "investment" },
+    include: { balance: true },
+  });
+
+  const normalized = accounts.map(normalizeAccountBalance);
+  const totalValue = normalized.reduce((sum, acc) => sum + (acc.balance?.currentBalance ?? 0), 0);
+
+  await upsertInvestmentSnapshot(userId, householdId, totalValue);
+
+  const fromDate = rangeToDate(range);
+  const snapshots = await prisma.portfolioSnapshot.findMany({
+    where: {
+      userId,
+      householdId,
+      portfolioId: null,
+      ...(fromDate ? { asOf: { gte: fromDate } } : {}),
+    },
+    orderBy: { asOf: "asc" },
+  });
+
+  return {
+    totalValue,
+    snapshots: snapshots.map((s) => ({
+      totalValue: Number(s.totalValue),
+      gainAmount: s.gainAmount !== null ? Number(s.gainAmount) : null,
+      asOf: s.asOf.toISOString(),
+    })),
+  };
 }
 
 /** List categories. */
