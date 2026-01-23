@@ -2,7 +2,7 @@
  * Mutual fund detail screen composition.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Text, View } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { COLORS } from '@/theme/colors';
 import {
@@ -12,12 +12,22 @@ import {
   type MutualFundPerformance,
   type MutualFundQuote,
 } from '@/services/mutualFunds';
+import { useHousehold } from '@/hooks/useHousehold';
+import {
+  useAccounts,
+  useWatchlist,
+  useAddToWatchlist,
+  useRemoveFromWatchlist,
+  useBuyPortfolio,
+} from '@/lib/useQueries';
 import { styles } from '../DiscoverScreen.styles';
 import { FundDetailHeader } from '../components/FundDetailHeader';
 import { FundPerformanceChart } from '../components/FundPerformanceChart';
 import { FundQuoteStats } from '../components/FundQuoteStats';
 import { FundMeta } from '../components/FundMeta';
 import { FundActions } from '../components/FundActions';
+import { BuyModal } from '../components/BuyModal';
+import { ApiClientError } from '@/services/api';
 
 type MutualFundDetailProps = {
   fund: MutualFund;

@@ -1,5 +1,5 @@
 /**
- * Home screen that composes data-driven components for portfolio, insights, and watchlist.
+ * Home screen that composes data-driven components for portfolio, insights, watchlist, and holdings.
  */
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -10,6 +10,7 @@ import { Screen } from '@/components/Screen';
 import { COLORS } from '@/theme/colors';
 import { BalanceSummary } from './components/BalanceSummary';
 import { HomeHeader } from './components/HomeHeader';
+import { HoldingsSection } from './components/HoldingsSection';
 import { PerformanceChart } from './components/PerformanceChart';
 import { TimeframeSelector } from './components/TimeframeSelector';
 import { WatchlistSection } from './components/WatchlistSection';
@@ -36,6 +37,7 @@ export function HomeScreen() {
     setShowNotifications,
     handleNotificationsChange,
     watchlistItems,
+    positions,
   } = useHomeData();
 
   return (
@@ -57,6 +59,11 @@ export function HomeScreen() {
             onSelectBar={setSelectedBarIndex}
           />
           <TimeframeSelector timeframe={timeframe} onSelect={setTimeframe} />
+          <HoldingsSection
+            positions={positions}
+            onPressItem={() => navigation.navigate('Discover')}
+            onPressViewAll={() => navigation.navigate('Discover')}
+          />
           <WatchlistSection
             items={watchlistItems}
             onPressItem={() => navigation.navigate('Discover')}

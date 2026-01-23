@@ -1,34 +1,27 @@
 /**
- * Discover screen listing mutual funds with detail view.
+ * Discover screen listing curated portfolios for investment.
  */
 import React from 'react';
 import { Screen } from '@/components/Screen';
 import { useDiscoverData } from './hooks/useDiscoverData';
 import { DiscoverHeader } from './components/DiscoverHeader';
-import { MutualFundList } from './components/MutualFundList';
-import { MutualFundDetail } from './detail/MutualFundDetail';
+import { PortfolioList } from './components/PortfolioList';
+import { PortfolioDetail } from './detail/PortfolioDetail';
 
 export function DiscoverScreen() {
   const {
     isLoading,
-    isDemoList,
-    listNotice,
     errorMessage,
-    mutualFunds,
-    selectedFund,
-    selectFund,
-    demoPerformance,
-    demoQuote,
+    portfolios,
+    selectedPortfolio,
+    selectPortfolio,
   } = useDiscoverData();
 
-  if (selectedFund) {
+  if (selectedPortfolio) {
     return (
-      <MutualFundDetail
-        fund={selectedFund}
-        onBack={() => selectFund(null)}
-        forceDemo={isDemoList}
-        demoPerformance={demoPerformance}
-        demoQuote={demoQuote}
+      <PortfolioDetail
+        portfolio={selectedPortfolio}
+        onBack={() => selectPortfolio(null)}
       />
     );
   }
@@ -36,13 +29,11 @@ export function DiscoverScreen() {
   return (
     <Screen>
       <DiscoverHeader />
-      <MutualFundList
-        funds={mutualFunds}
+      <PortfolioList
+        portfolios={portfolios}
         isLoading={isLoading}
         errorMessage={errorMessage}
-        listNotice={listNotice}
-        isDemoList={isDemoList}
-        onSelect={selectFund}
+        onSelect={selectPortfolio}
       />
     </Screen>
   );

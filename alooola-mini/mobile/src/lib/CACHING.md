@@ -47,9 +47,12 @@ export const featureKeys = {
 | Feature | Key | Purpose |
 |---------|-----|---------|
 | `investmentKeys.summary` | `['investments', 'summary', householdId]` | Investment totals for Home screen |
+| `investmentKeys.positions` | `['investments', 'positions', householdId]` | User's portfolio holdings |
 | `accountKeys.list` | `['accounts', 'list', householdId]` | All accounts for Accounts screen |
 | `accountKeys.transactions` | `['accounts', 'transactions', householdId, accountId]` | Transactions per account |
 | `accountKeys.categories` | `['accounts', 'categories', householdId]` | Spending categories |
+| `portfolioKeys.list` | `['portfolios', 'list']` | Curated portfolios for Discover |
+| `portfolioKeys.detail` | `['portfolios', 'detail', id]` | Single portfolio details |
 | `watchlistKeys.list` | `['watchlist', 'list']` | User's watchlist items |
 | `notificationKeys.unreadCount` | `['notifications', 'unreadCount']` | Unread notification badge |
 
@@ -82,6 +85,60 @@ useQuery({
   refetchOnMount: 'always',      // Refetch every time component mounts
 });
 ```
+
+---
+
+## App Initialization (Prefetching)
+
+The app uses a centralized initialization hook (`useAppInitialization`) to prefetch all critical data **before** showing the main UI. This ensures a seamless experience where screens are ready immediately.
+
+### How It Works
+
+```
+Login → LoadingScreen → [Prefetch All Data] → Main App
+```
+
+The `RootNavigator` gates the main app until:
+1. Authentication is complete
+2. Household data is loaded
+3. All critical queries have finished (via `useAppInitialization`)
+
+### Critical Queries (Prefetched)
+
+These are loaded in parallel before the app becomes visible:
+
+| Query | Purpose |
+|-------|---------|
+| Investment Summary | Home screen portfolio value |
+| Accounts List | Accounts screen cards |
+| Portfolio Positions | Home holdings section |
+| Curated Portfolios | Discover screen list |
+| Watchlist | Home watchlist section |
+| Categories | Transaction forms |
+
+### Adding New Critical Data
+
+If a new screen requires data that **must** be ready on first render:
+
+1. Add the query to `useAppInitialization.ts`:
+
+```ts
+// In the queries array
+{
+  queryKey: myFeatureKeys.list(householdId ?? ''),
+  queryFn: async () => {
+    if (!householdId) return [];
+    return getMyFeatureData(householdId);
+  },
+  enabled: enabled && !!householdId,
+},
+```
+
+2. Ensure the query also has a corresponding hook in `useQueries.ts` for component use
+
+### Non-Critical Data
+
+Data that's nice to have but not required for first render should **not** be added to initialization. Let individual screens fetch it with their own loading states.
 
 ---
 
@@ -141,7 +198,9 @@ After a mutation, invalidate any queries whose data may have changed:
 |----------|------------|
 | Create transaction | `accounts.list`, `accounts.transactions`, `investments.summary` |
 | Create account | `accounts.list`, `investments.summary` |
+| Buy portfolio | `investments.summary`, `investments.positions`, `accounts.list`, `accounts.transactions` |
 | Add to watchlist | `watchlist.all` |
+| Remove from watchlist | `watchlist.all` |
 
 ### Example Mutation
 

@@ -13,6 +13,14 @@ type TimeframeSelectorProps = {
   onSelect: (timeframe: Timeframe) => void;
 };
 
+/** Display-friendly labels for each timeframe */
+const TIMEFRAME_LABELS: Record<Timeframe, string> = {
+  '1D': 'Today',
+  '1M': '1M',
+  '1Y': '1Y',
+  ALL: 'All',
+};
+
 export function TimeframeSelector({ timeframe, onSelect }: TimeframeSelectorProps) {
   return (
     <View style={styles.timeframeRow}>
@@ -25,7 +33,9 @@ export function TimeframeSelector({ timeframe, onSelect }: TimeframeSelectorProp
             timeframe === tf ? styles.timeframeChipActive : styles.timeframeChipInactive,
           ]}
         >
-          <Text style={timeframe === tf ? styles.timeframeTextActive : styles.timeframeTextInactive}>{tf}</Text>
+          <Text style={timeframe === tf ? styles.timeframeTextActive : styles.timeframeTextInactive}>
+            {TIMEFRAME_LABELS[tf]}
+          </Text>
         </Pressable>
       ))}
     </View>

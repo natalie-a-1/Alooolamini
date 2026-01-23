@@ -16,6 +16,9 @@ export const investmentKeys = {
 
   /** Investment summary for a specific household */
   summary: (householdId: string) => [...investmentKeys.all, 'summary', householdId] as const,
+
+  /** Portfolio positions for a household */
+  positions: (householdId: string) => [...investmentKeys.all, 'positions', householdId] as const,
 };
 
 /**
@@ -59,4 +62,18 @@ export const notificationKeys = {
 
   /** Unread notification count */
   unreadCount: () => [...notificationKeys.all, 'unreadCount'] as const,
+};
+
+/**
+ * Query keys for curated portfolio data (Discover screen).
+ */
+export const portfolioKeys = {
+  /** Base key for all portfolio queries */
+  all: ['portfolios'] as const,
+
+  /** List of curated portfolios */
+  list: () => [...portfolioKeys.all, 'list'] as const,
+
+  /** Single portfolio by ID */
+  detail: (id: string) => [...portfolioKeys.all, 'detail', id] as const,
 };

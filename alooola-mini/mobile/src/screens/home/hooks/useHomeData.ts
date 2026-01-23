@@ -1,12 +1,12 @@
 /**
- * Manages Home screen data: portfolio summary, chart state, notifications, and watchlist.
+ * Manages Home screen data: portfolio summary, chart state, notifications, watchlist, and holdings.
  * Uses TanStack Query for cached server state with stale-while-revalidate pattern.
  */
 import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useHousehold } from '@/hooks/useHousehold';
 import { getTimeframeDays } from '@/lib/format';
-import { useInvestmentSummary, useWatchlist, useUnreadNotificationCount } from '@/lib/useQueries';
+import { useInvestmentSummary, useWatchlist, useUnreadNotificationCount, usePortfolioPositions } from '@/lib/useQueries';
 import { TIMEFRAMES } from '../HomeScreen.mock';
 
 type Timeframe = (typeof TIMEFRAMES)[number];
@@ -24,6 +24,7 @@ export function useHomeData() {
   // Server state via TanStack Query - cached and shared across screens
   const { data: portfolio, isLoading } = useInvestmentSummary(household?.id);
   const { data: watchlistItems = [] } = useWatchlist();
+  const { data: positions = [], isLoading: isLoadingPositions } = usePortfolioPositions(household?.id);
   const { data: unreadNotifications = 0, refetch: refetchNotifications } = useUnreadNotificationCount();
 
   // Reset bar selection when timeframe changes
@@ -68,12 +69,10 @@ export function useHomeData() {
 
   const timeframeLabel = useMemo(() => {
     switch (timeframe) {
+      case '1D':
+        return 'today';
       case '1M':
         return 'past month';
-      case '3M':
-        return 'past 3 months';
-      case '6M':
-        return 'past 6 months';
       case '1Y':
         return 'past year';
       case 'ALL':
@@ -113,5 +112,7 @@ export function useHomeData() {
     setShowNotifications,
     handleNotificationsChange,
     watchlistItems,
+    positions,
+    isLoadingPositions,
   };
 }

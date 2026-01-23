@@ -4,6 +4,14 @@ import { normalizeName } from "./format";
 
 export const REFRESH_TOKEN_KEY = 'refresh_token';
 
+/**
+ * Feature flags for gating incomplete/hidden functionality.
+ * Keep these in one place so UI + navigation stays consistent.
+ */
+export const FEATURE_FLAGS = {
+  assistant: false, // AI Chat / Assistant tab (hidden for now)
+} as const;
+
 // Backend seeds exactly these six names; map by full normalized name to avoid falling back.
 export const CATEGORY_MAP: Record<string, { icon: IconProps['name']; color: string; label: string }> = {
     'dining': { icon: 'utensils', color: COLORS.accentGreen, label: 'Dining' },

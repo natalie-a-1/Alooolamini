@@ -9,8 +9,15 @@
  * All network calls still happen in services/<feature>.ts per architecture guidelines.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { investmentKeys, accountKeys, watchlistKeys, notificationKeys } from './queryKeys';
+import { investmentKeys, accountKeys, watchlistKeys, notificationKeys, portfolioKeys } from './queryKeys';
 import { getInvestmentSummary, type InvestmentSummary } from '@/services/investments';
+import {
+  buyPortfolio,
+  getCuratedPortfolios,
+  getPortfolioPositions,
+  type CuratedPortfolio,
+  type PortfolioPosition,
+} from '@/services/portfolios';
 import {
   getAccounts,
   getTransactions,
@@ -44,6 +51,75 @@ export function useInvestmentSummary(householdId: string | undefined) {
     // Always refetch when mounting to ensure Home screen shows fresh investment data
     staleTime: 0,
     refetchOnMount: 'always',
+  });
+}
+
+/**
+ * Fetches portfolio positions for a household.
+ */
+export function usePortfolioPositions(householdId: string | undefined) {
+  return useQuery<PortfolioPosition[]>({
+    queryKey: investmentKeys.positions(householdId ?? ''),
+    queryFn: async () => {
+      if (!householdId) return [];
+      return getPortfolioPositions(householdId);
+    },
+    enabled: !!householdId,
+  });
+}
+
+/**
+ * Fetches curated portfolios (Discover screen).
+ * These are pre-configured investment portfolios users can buy into.
+ */
+export function useCuratedPortfolios() {
+  return useQuery<CuratedPortfolio[]>({
+    queryKey: portfolioKeys.list(),
+    queryFn: getCuratedPortfolios,
+    // Portfolios don't change often - longer stale time is fine
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Mutation to buy a portfolio position.
+ * Debits funding account and creates/updates position.
+ * Invalidates investment summary and account balances on success.
+ */
+export function useBuyPortfolio() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      householdId,
+      portfolioId,
+      amountInvested,
+      fundingAccountId,
+    }: {
+      householdId: string;
+      portfolioId: string;
+      amountInvested: number;
+      fundingAccountId: string;
+    }) => {
+      return buyPortfolio(householdId, portfolioId, amountInvested, fundingAccountId);
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate investment data (new position affects totals)
+      queryClient.invalidateQueries({
+        queryKey: investmentKeys.summary(variables.householdId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: investmentKeys.positions(variables.householdId),
+      });
+      // Invalidate accounts (funding account balance changed)
+      queryClient.invalidateQueries({
+        queryKey: accountKeys.list(variables.householdId),
+      });
+      // Invalidate transactions for the funding account (new transaction created)
+      queryClient.invalidateQueries({
+        queryKey: accountKeys.transactions(variables.householdId, variables.fundingAccountId),
+      });
+    },
   });
 }
 

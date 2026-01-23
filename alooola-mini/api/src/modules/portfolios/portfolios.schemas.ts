@@ -10,15 +10,19 @@ export const portfolioDetailSchema = z.object({
   query: z.object({}).optional().default({}),
 });
 
-/** Validation schema for create position. */
+/** Validation schema for create position (buy portfolio). */
 export const createPositionSchema = z.object({
   body: z.object({
     portfolioId: z.string().uuid(),
     amountInvested: z.number().positive(),
+    fundingAccountId: z.string().uuid(),
   }),
   params: z.object({ householdId: z.string().uuid() }),
   query: z.object({}).optional().default({}),
 });
+
+/** Type for create position input. */
+export type CreatePositionInput = z.infer<typeof createPositionSchema>["body"];
 
 /** Validation schema for list positions. */
 export const listPositionsSchema = z.object({

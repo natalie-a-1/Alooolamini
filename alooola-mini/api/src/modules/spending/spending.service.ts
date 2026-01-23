@@ -88,7 +88,7 @@ async function ensureHouseholdAccess(userId: string, householdId: string) {
 
 /**
  * Converts a string range identifier to a JavaScript Date object representing the start.
- * @param range String identifier (e.g., "1M", "3M", "6M", "1Y" or "ALL")
+ * @param range String identifier (e.g., "1D", "1M", "1Y" or "ALL")
  * @returns Date object or null if no range
  */
 function rangeToDate(range?: string) {
@@ -96,14 +96,11 @@ function rangeToDate(range?: string) {
   const now = new Date();
   const date = new Date(now.getTime());
   switch (range) {
+    case "1D":
+      date.setDate(date.getDate() - 1);
+      return date;
     case "1M":
       date.setMonth(date.getMonth() - 1);
-      return date;
-    case "3M":
-      date.setMonth(date.getMonth() - 3);
-      return date;
-    case "6M":
-      date.setMonth(date.getMonth() - 6);
       return date;
     case "1Y":
       date.setFullYear(date.getFullYear() - 1);
@@ -183,22 +180,16 @@ export async function getAccount(userId: string, accountId: string) {
 }
 
 /**
- * Either inserts a new investment portfolio snapshot, or skips if latest is unchanged.
- * Used to track historical portfolio values.
+ * Creates a new investment portfolio snapshot.
+ * Called explicitly when portfolio value changes (e.g., after a purchase).
+ * NOT called on every read - snapshots should be seeded or created on mutations.
+ * 
  * @param userId   ID of user
  * @param householdId  ID of household
  * @param totalValue  Total portfolio value
  */
-async function upsertInvestmentSnapshot(userId: string, householdId: string, totalValue: number) {
-  const latest = await prisma.portfolioSnapshot.findFirst({
-    where: { userId, householdId, portfolioId: null },
-    orderBy: { asOf: "desc" },
-  });
-
-  const latestValue = latest ? Number(latest.totalValue) : null;
-  if (latestValue === totalValue) return;
-
-  await prisma.portfolioSnapshot.create({
+export async function createInvestmentSnapshot(userId: string, householdId: string, totalValue: number) {
+  return prisma.portfolioSnapshot.create({
     data: {
       userId,
       householdId,
@@ -214,24 +205,38 @@ async function upsertInvestmentSnapshot(userId: string, householdId: string, tot
 /**
  * Returns a summary of investment account values and portfolio snapshots for a household.
  * Only investment-type accounts are considered.
+ * 
+ * Note: Snapshots are NOT automatically created on read. They should be:
+ * - Seeded in the database for historical data
+ * - Created via createInvestmentSnapshot() after portfolio changes (e.g., purchases)
  *
  * @param userId      The user requesting the summary
  * @param householdId Household ID being queried
- * @param range       Optional time range string (see rangeToDate)
+ * @param range       Optional time range string (1D, 1M, 1Y, ALL)
  * @returns           Object with totalValue and snapshots array
  */
 export async function getInvestmentSummary(userId: string, householdId: string, range?: string) {
   await ensureHouseholdAccess(userId, householdId);
+  
+  // Get investment accounts
   const accounts = await prisma.account.findMany({
     where: { householdId, type: "investment" },
     include: { balance: true },
   });
 
   const normalized = accounts.map(normalizeAccountBalance);
-  const totalValue = normalized.reduce((sum, acc) => sum + (acc.balance?.currentBalance ?? 0), 0);
+  const accountsTotal = normalized.reduce((sum, acc) => sum + (acc.balance?.currentBalance ?? 0), 0);
 
-  await upsertInvestmentSnapshot(userId, householdId, totalValue);
+  // Get portfolio positions (invested amounts)
+  const positions = await prisma.userPortfolioPosition.findMany({
+    where: { userId, householdId },
+  });
+  const positionsTotal = positions.reduce((sum, pos) => sum + Number(pos.amountInvested), 0);
 
+  // Total investment value = investment accounts + portfolio positions
+  const totalValue = accountsTotal + positionsTotal;
+
+  // Query existing snapshots - do NOT auto-create on read
   const fromDate = rangeToDate(range);
   const snapshots = await prisma.portfolioSnapshot.findMany({
     where: {
