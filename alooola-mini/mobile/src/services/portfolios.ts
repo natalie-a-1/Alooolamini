@@ -1,7 +1,7 @@
 /**
  * Portfolio API service.
  */
-import { apiGet } from './api';
+import { apiGet, apiPost } from './api';
 
 export interface CuratedPortfolio {
   id: string;
@@ -31,6 +31,15 @@ export interface PortfolioSnapshot {
   asOf: string;
 }
 
+export interface PortfolioPosition {
+  id: string;
+  userId: string;
+  householdId: string;
+  portfolioId: string;
+  amountInvested: number;
+  portfolio: CuratedPortfolio;
+}
+
 /**
  * Get all curated portfolios.
  */
@@ -46,10 +55,30 @@ export async function getPortfolio(id: string): Promise<CuratedPortfolio> {
 }
 
 /**
- * Get portfolio summary for a household.
- * @param range - Optional time range: '1M', '3M', '6M', '1Y', or 'ALL'
+ * Buy a portfolio position.
+ * Debits the specified funding account and creates/updates the user's position.
+ * 
+ * @param householdId - The household making the purchase
+ * @param portfolioId - The portfolio to buy
+ * @param amountInvested - Dollar amount to invest
+ * @param fundingAccountId - Checking or savings account to debit
  */
-export async function getPortfolioSummary(householdId: string, range?: string): Promise<PortfolioSummary> {
-  const params = range ? `?range=${range}` : '';
-  return apiGet<PortfolioSummary>(`/households/${householdId}/portfolio-summary${params}`);
+export async function buyPortfolio(
+  householdId: string,
+  portfolioId: string,
+  amountInvested: number,
+  fundingAccountId: string
+): Promise<PortfolioPosition> {
+  return apiPost<PortfolioPosition>(`/households/${householdId}/portfolio-positions`, {
+    portfolioId,
+    amountInvested,
+    fundingAccountId,
+  });
+}
+
+/**
+ * Get user's portfolio positions for a household.
+ */
+export async function getPortfolioPositions(householdId: string): Promise<PortfolioPosition[]> {
+  return apiGet<PortfolioPosition[]>(`/households/${householdId}/portfolio-positions`);
 }

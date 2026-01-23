@@ -7,12 +7,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeScreen } from '@/screens/home';
 import { DiscoverScreen } from '@/screens/discover';
-import { AvailableScreen } from '@/screens/available';
-import { SpendingScreen } from '@/screens/spending';
+import { AccountsScreen } from '@/screens/accounts';
+import { AssistantScreen } from '@/screens/assistant';
 import { ProfileScreen } from '@/screens/profile';
 import { Icon } from '@/components/Icon';
 import { COLORS } from '@/theme/colors';
 import { RADIUS } from '@/theme/layout';
+import { FEATURE_FLAGS } from '@/lib/constants';
 import type { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -20,8 +21,8 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const ICONS: Record<string, string> = {
   Home: 'home',
   Discover: 'search',
-  Available: 'wallet',
-  Spending: 'creditCard',
+  Accounts: 'wallet',
+  ...(FEATURE_FLAGS.assistant ? { Assistant: 'messageCircle' } : {}),
   Profile: 'grid',
 };
 
@@ -52,8 +53,8 @@ export function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />
-      <Tab.Screen name="Available" component={AvailableScreen} />
-      <Tab.Screen name="Spending" component={SpendingScreen} />
+      <Tab.Screen name="Accounts" component={AccountsScreen} />
+      {FEATURE_FLAGS.assistant ? <Tab.Screen name="Assistant" component={AssistantScreen} /> : null}
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

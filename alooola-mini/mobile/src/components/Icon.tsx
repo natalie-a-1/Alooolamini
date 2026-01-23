@@ -5,12 +5,15 @@ import React from 'react';
 import type { SvgProps } from 'react-native-svg';
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowUpRight,
   Bell,
   BookOpen,
   Briefcase,
   Building2,
   Calendar,
+  Camera,
+  Car,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -49,7 +52,6 @@ import {
   Users,
   UtensilsCrossed,
   Wallet,
-  Car,
   X,
   Zap,
 } from 'lucide-react-native';
@@ -60,12 +62,15 @@ type IconComponent = React.ComponentType<SvgProps & { size?: number }>;
 
 const ICONS = {
   alert: AlertCircle,
+  alertTriangle: AlertTriangle,
+  'alert-triangle': AlertTriangle,
   arrowUpRight: ArrowUpRight,
   bell: Bell,
   book: BookOpen,
   briefcase: Briefcase,
   building: Building2,
   calendar: Calendar,
+  camera: Camera,
   car: Car,
   check: Check,
   checkCircle: CheckCircle2,
@@ -110,16 +115,21 @@ const ICONS = {
   zap: Zap,
 } as const satisfies Record<string, IconComponent>;
 
+export type IconColor = keyof typeof COLORS | string;
+
 export interface IconProps {
   name: keyof typeof ICONS | string;
   size?: number;
-  color?: string;
+  color?: IconColor;
   strokeWidth?: number;
   style?: SvgProps['style'];
 }
 
 /** React Native component for a lightweight icon. */
-export function Icon({ name, size = 16, color = COLORS.ink, strokeWidth = 2, style }: IconProps) {
+export function Icon({ name, size = 16, color = 'ink', strokeWidth = 2, style }: IconProps) {
   const LucideIcon = (ICONS as Record<string, IconComponent>)[name] ?? Circle;
-  return <LucideIcon size={size} color={color} strokeWidth={strokeWidth} style={style} />;
+  const resolvedColor =
+    typeof color === 'string' && color in COLORS ? COLORS[color as keyof typeof COLORS] : color ?? COLORS.ink;
+
+  return <LucideIcon size={size} color={resolvedColor} strokeWidth={strokeWidth} style={style} />;
 }

@@ -23,6 +23,10 @@ const prisma = new PrismaClient({ adapter });
 
 const money = (value: number) => new Prisma.Decimal(value.toFixed(2));
 
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
 async function upsertUser(email: string, name: string) {
   return prisma.user.upsert({
     where: { email },
@@ -34,8 +38,13 @@ async function upsertUser(email: string, name: string) {
 async function main() {
   // Use current date so transactions appear in "This Month" queries
   const seedNow = new Date();
-  const addDays = (date: Date, days: number) =>
-    new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+  const addDays = (date: Date, days: number) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+  const addHours = (date: Date, hours: number) => new Date(date.getTime() + hours * 60 * 60 * 1000);
+  const addMonths = (date: Date, months: number) => {
+    const d = new Date(date.getTime());
+    d.setMonth(d.getMonth() + months);
+    return d;
+  };
   const seedPasswordHash = await hashPassword(process.env.DEMO_ACCOUNT_PASSWORD ?? "");
   if (!seedPasswordHash) {
     throw new Error("DEMO_ACCOUNT_PASSWORD is not set");
@@ -226,8 +235,20 @@ async function main() {
       type: "investment",
       institution: "Vanguard",
       last4: "9012",
-      availableBalance: money(45000),
-      currentBalance: money(47500),
+      // This is intentionally tuned to match the seeded holdings + snapshots.
+      // Current invested positions total: 97,606.55
+      // Investment account balance:      49,300.22
+      // Total shown on Home:           146,906.77
+      availableBalance: money(49300.22),
+      currentBalance: money(49300.22),
+    },
+    {
+      name: "Rewards Credit Card",
+      type: "credit",
+      institution: "Alooola Card",
+      last4: "4455",
+      availableBalance: money(0),
+      currentBalance: money(2180.55),
     },
   ];
 
@@ -301,6 +322,8 @@ async function main() {
   const categoryByName = new Map(categories.map((category) => [category.name, category]));
 
   const savingsAccount = createdAccounts.find(a => a.name === "Emergency Savings");
+  const creditAccount = createdAccounts.find(a => a.name === "Rewards Credit Card");
+  const investmentAccount = createdAccounts.find(a => a.name === "Investment Account");
 
   // Primary checking transactions - use dates relative to seedNow
   const checkingTransactions = [
@@ -366,7 +389,7 @@ async function main() {
           accountId: account.id,
           attributedUserId: txn.userId,
           categoryId: category.id,
-          txnType: TxnType.debit,
+          txnType: TxnType.spend,
           amount: txn.amount,
           currency: "USD",
           merchant: txn.merchant,
@@ -384,13 +407,13 @@ async function main() {
         merchant: "Direct Deposit - Salary",
         amount: money(5000),
         txnDate: addDays(seedNow, -3),
-        txnType: TxnType.credit,
+        txnType: TxnType.receive,
       },
       {
         merchant: "Interest Payment",
         amount: money(12.50),
         txnDate: addDays(seedNow, -14),
-        txnType: TxnType.credit,
+        txnType: TxnType.receive,
       },
     ];
 
@@ -408,6 +431,62 @@ async function main() {
           data: {
             householdId: household.id,
             accountId: savingsAccount.id,
+            attributedUserId: primaryUser.id,
+            categoryId: otherCategory.id,
+            txnType: txn.txnType,
+            amount: txn.amount,
+            currency: "USD",
+            merchant: txn.merchant,
+            txnDate: txn.txnDate,
+          },
+        });
+      }
+    }
+  }
+
+  // Credit card transactions to make Accounts UI feel real.
+  if (creditAccount && otherCategory) {
+    const creditTxns = [
+      {
+        merchant: "Airline Tickets",
+        amount: money(842.17),
+        txnDate: addDays(seedNow, -18),
+        txnType: TxnType.spend,
+      },
+      {
+        merchant: "Hotel Stay",
+        amount: money(612.40),
+        txnDate: addDays(seedNow, -22),
+        txnType: TxnType.spend,
+      },
+      {
+        merchant: "Statement Payment",
+        amount: money(500.00),
+        txnDate: addDays(seedNow, -10),
+        txnType: TxnType.receive,
+      },
+      {
+        merchant: "Coffee + Snacks",
+        amount: money(18.58),
+        txnDate: addDays(seedNow, -2),
+        txnType: TxnType.spend,
+      },
+    ];
+
+    for (const txn of creditTxns) {
+      const existingTxn = await prisma.transaction.findFirst({
+        where: {
+          accountId: creditAccount.id,
+          merchant: txn.merchant,
+          amount: txn.amount,
+          txnDate: txn.txnDate,
+        },
+      });
+      if (!existingTxn) {
+        await prisma.transaction.create({
+          data: {
+            householdId: household.id,
+            accountId: creditAccount.id,
             attributedUserId: primaryUser.id,
             categoryId: otherCategory.id,
             txnType: txn.txnType,
@@ -555,55 +634,29 @@ async function main() {
         portfolioId: saved.id,
       },
     });
+    // Seed realistic holdings amounts so Home "Your Holdings" looks good.
+    // These values also correlate to the household-level investment snapshots we seed below.
+    const seededAmountByPortfolioName: Record<string, number> = {
+      "Medical Technology": 45020.0,
+      "Biotech Innovation Fund": 25000.0,
+      "Healthcare REIT Portfolio": 27586.55,
+    };
+    const desiredAmount = seededAmountByPortfolioName[portfolio.name] ?? 25000;
+
     if (!existingPosition) {
       await prisma.userPortfolioPosition.create({
         data: {
           householdId: household.id,
           userId: primaryUser.id,
           portfolioId: saved.id,
-          amountInvested: money(25000),
+          amountInvested: money(desiredAmount),
         },
       });
-    }
-
-    // Create historical snapshots for the chart (past 30 days)
-    // Only create for the first portfolio to avoid aggregation confusion
-    if (portfolioIndex === 0) {
-      const baseValue = 125000;
-      const currentValue = 134420.5;
-      const days = 30;
-      
-      for (let i = days; i >= 0; i--) {
-        const snapshotDate = addDays(seedNow, -i);
-        // Simulate gradual growth with some variation
-        const progress = (days - i) / days;
-        const variation = Math.sin(i * 0.5) * 2000; // Add some wave-like variation
-        const snapshotValue = baseValue + (currentValue - baseValue) * progress + variation;
-        const snapshotGain = snapshotValue - baseValue;
-        
-        const existingSnapshot = await prisma.portfolioSnapshot.findFirst({
-          where: {
-            userId: primaryUser.id,
-            householdId: household.id,
-            portfolioId: saved.id,
-            asOf: snapshotDate,
-          },
-        });
-        
-        if (!existingSnapshot) {
-          await prisma.portfolioSnapshot.create({
-            data: {
-              userId: primaryUser.id,
-              householdId: household.id,
-              portfolioId: saved.id,
-              totalValue: money(snapshotValue),
-              gainAmount: money(snapshotGain),
-              gainPercent: new Prisma.Decimal(((snapshotGain / baseValue) * 100).toFixed(2)),
-              asOf: snapshotDate,
-            },
-          });
-        }
-      }
+    } else {
+      await prisma.userPortfolioPosition.update({
+        where: { id: existingPosition.id },
+        data: { amountInvested: money(desiredAmount) },
+      });
     }
 
     await prisma.portfolioPosition.createMany({
@@ -617,6 +670,104 @@ async function main() {
         asOf: seedNow,
       })),
       skipDuplicates: true,
+    });
+  }
+
+  // Seed Watchlist so Home watchlist has rows immediately.
+  const seededWatchlistNames = ["Medical Technology", "Biotech Innovation Fund"];
+  const watchlistPortfolios = await prisma.curatedPortfolio.findMany({
+    where: { name: { in: seededWatchlistNames } },
+  });
+  await prisma.watchlistItem.createMany({
+    data: watchlistPortfolios.map((p) => ({ userId: primaryUser.id, portfolioId: p.id })),
+    skipDuplicates: true,
+  });
+
+  // ---------------------------------------------------------------------------
+  // Seed HOUSEHOLD-LEVEL investment snapshots used by the Home chart.
+  // Home calls getInvestmentSummary() which queries portfolio_snapshots with portfolioId = null.
+  // We seed:
+  // - Monthly points for older history (good for ALL / 1Y)
+  // - Daily points for last ~30 days (good for 1M)
+  // - Intraday points for last 24 hours (good for Today)
+  // ---------------------------------------------------------------------------
+
+  // Clear existing household-level snapshots for this demo user so rerunning seed is stable.
+  await prisma.portfolioSnapshot.deleteMany({
+    where: { userId: primaryUser.id, householdId: household.id, portfolioId: null },
+  });
+
+  const endTotal = 146_906.77; // matches Investment Account + seeded positions
+  const startTotal = 92_500.0; // ~2 years ago baseline
+
+  // Simple deterministic "noise" so values aren't flat but are repeatable.
+  const noise = (x: number) => Math.sin(x * 0.7) * 1200 + Math.cos(x * 0.17) * 450;
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+  type SnapshotPoint = { asOf: Date; totalValue: number };
+  const points: SnapshotPoint[] = [];
+
+  // Monthly snapshots: from 24 months ago up to 2 months ago (inclusive)
+  const monthsBackStart = 24;
+  const monthsBackEnd = 2;
+  for (let m = monthsBackStart; m >= monthsBackEnd; m--) {
+    const asOf = new Date(addMonths(seedNow, -m));
+    asOf.setHours(12, 0, 0, 0);
+    const t = (monthsBackStart - m) / (monthsBackStart - monthsBackEnd);
+    const value = clamp(lerp(startTotal, endTotal * 0.93, t) + noise(m), 10_000, 1_000_000);
+    points.push({ asOf, totalValue: value });
+  }
+
+  // Daily snapshots: last 30 days (excluding last 1 day because we add intraday below)
+  const days = 30;
+  const dailyStart = endTotal * 0.90;
+  for (let d = days; d >= 2; d--) {
+    const asOf = new Date(addDays(seedNow, -d));
+    asOf.setHours(12, 0, 0, 0);
+    const t = (days - d) / (days - 2);
+    const value = clamp(lerp(dailyStart, endTotal * 0.995, t) + noise(d * 1.3), 10_000, 1_000_000);
+    points.push({ asOf, totalValue: value });
+  }
+
+  // Intraday snapshots: last 24 hours every 2 hours, ending at endTotal.
+  const steps = 12; // 0..12 => 13 points
+  for (let i = steps; i >= 0; i--) {
+    const hoursBack = i * 2;
+    const asOf = new Date(addHours(seedNow, -hoursBack));
+    // Stagger within the hour so ordering is stable but not identical times.
+    asOf.setMinutes(i % 2 === 0 ? 10 : 40, 0, 0);
+    const t = (steps - i) / steps;
+    const value = i === 0 ? endTotal : clamp(lerp(endTotal * 0.985, endTotal, t) + noise(i * 2.1) * 0.15, 10_000, 1_000_000);
+    points.push({ asOf, totalValue: value });
+  }
+
+  // Sort and insert.
+  points.sort((a, b) => a.asOf.getTime() - b.asOf.getTime());
+  const baseline = points[0]?.totalValue ?? endTotal;
+
+  await prisma.portfolioSnapshot.createMany({
+    data: points.map((p) => {
+      const gainAmount = p.totalValue - baseline;
+      const gainPercent = baseline > 0 ? (gainAmount / baseline) * 100 : 0;
+      return {
+        userId: primaryUser.id,
+        householdId: household.id,
+        portfolioId: null,
+        totalValue: money(p.totalValue),
+        gainAmount: money(gainAmount),
+        gainPercent: new Prisma.Decimal(gainPercent.toFixed(2)),
+        asOf: p.asOf,
+      };
+    }),
+  });
+
+  // Ensure the investment account balance aligns to the demo totals.
+  // (Some apps display this account and it should feel consistent with the chart.)
+  if (investmentAccount) {
+    await prisma.accountBalance.upsert({
+      where: { accountId: investmentAccount.id },
+      update: { availableBalance: money(49300.22), currentBalance: money(49300.22), asOf: seedNow },
+      create: { accountId: investmentAccount.id, availableBalance: money(49300.22), currentBalance: money(49300.22), asOf: seedNow },
     });
   }
 

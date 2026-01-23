@@ -125,6 +125,15 @@ export const styles = StyleSheet.create({
     height: 120,
     position: 'relative',
   },
+  chartPressable: {
+    flex: 1,
+  },
+  chartEmptyFrame: {
+    flex: 1,
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.border,
+    opacity: 0.35,
+  },
   chartBars: {
     flexDirection: 'row',
     alignItems: 'flex-end',

@@ -1,67 +1,127 @@
 /**
- * Route handlers for the onboarding module.
+ * @file onboarding.routes.ts
+ * @description Express router for user onboarding flows including user onboarding state,
+ * onboarding options, household joining, onboarding submission, and completion.
  */
+
 import { Router } from "express";
+
+// Middleware imports
 import { requireAuth } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
-import { 
-  completeOnboardingSchema,
+
+// Validation schemas
+import {
+  onboardingOptionsSchema,
+  onboardingMeSchema,
   joinHouseholdSchema,
-  onboardingMeSchema, 
-  onboardingOptionsSchema 
+  completeOnboardingSchema,
 } from "./onboarding.schemas";
-import { 
-  completeOnboarding,
-  getOnboardingForUser, 
-  getOnboardingOptions, 
+
+// Service function imports
+import {
+  getOnboardingOptions,
+  getOnboardingForUser,
+  upsertOnboarding,
   joinHouseholdWithInviteCode,
-  upsertOnboarding 
+  completeOnboarding,
 } from "./onboarding.service";
 
-/** Router for onboarding routes. */
+/**
+ * Express router instance for onboarding-related routes.
+ */
 export const onboardingRouter = Router();
 
-onboardingRouter.get("/options", validate(onboardingOptionsSchema), async (_req, res, next) => {
-  try {
-    const data = await getOnboardingOptions();
-    res.json({ data });
-  } catch (err) {
-    next(err);
+/**
+ * @route GET /options
+ * @desc Get available onboarding options (goals, risk tolerances, starter amounts).
+ * @access Public
+ */
+onboardingRouter.get(
+  "/options",
+  validate(onboardingOptionsSchema),
+  async (_req, res, next) => {
+    try {
+      const data = await getOnboardingOptions();
+      res.json({ data });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
-onboardingRouter.get("/me", requireAuth, async (req, res, next) => {
-  try {
-    const data = await getOnboardingForUser(req.user!.id);
-    res.json({ data });
-  } catch (err) {
-    next(err);
+/**
+ * @route GET /me
+ * @desc Get onboarding progress and form data for the authenticated user.
+ * @access Private
+ */
+onboardingRouter.get(
+  "/me",
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const data = await getOnboardingForUser(req.user!.id);
+      res.json({ data });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
-onboardingRouter.put("/me", requireAuth, validate(onboardingMeSchema), async (req, res, next) => {
-  try {
-    const data = await upsertOnboarding(req.user!.id, req.body);
-    res.json({ data });
-  } catch (err) {
-    next(err);
+/**
+ * @route PUT /me
+ * @desc Upsert (save) onboarding form data for the authenticated user.
+ * @access Private
+ */
+onboardingRouter.put(
+  "/me",
+  requireAuth,
+  validate(onboardingMeSchema),
+  async (req, res, next) => {
+    try {
+      const data = await upsertOnboarding(req.user!.id, req.body);
+      res.json({ data });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
-onboardingRouter.post("/household/join", requireAuth, validate(joinHouseholdSchema), async (req, res, next) => {
-  try {
-    const data = await joinHouseholdWithInviteCode(req.user!.id, req.body.inviteCode);
-    res.json({ data });
-  } catch (err) {
-    next(err);
+/**
+ * @route POST /household/join
+ * @desc Join an existing household via invite code during onboarding.
+ * @access Private
+ */
+onboardingRouter.post(
+  "/household/join",
+  requireAuth,
+  validate(joinHouseholdSchema),
+  async (req, res, next) => {
+    try {
+      const data = await joinHouseholdWithInviteCode(req.user!.id, req.body.inviteCode);
+      res.json({ data });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
-onboardingRouter.post("/complete", requireAuth, validate(completeOnboardingSchema), async (req, res, next) => {
-  try {
-    const data = await completeOnboarding(req.user!.id);
-    res.json({ data });
-  } catch (err) {
-    next(err);
+/**
+ * @route POST /complete
+ * @desc Complete onboarding for the authenticated user. Finalizes onboarding.
+ * @access Private
+ */
+onboardingRouter.post(
+  "/complete",
+  requireAuth,
+  validate(completeOnboardingSchema),
+  async (req, res, next) => {
+    try {
+      const data = await completeOnboarding(req.user!.id);
+      res.json({ data });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
+

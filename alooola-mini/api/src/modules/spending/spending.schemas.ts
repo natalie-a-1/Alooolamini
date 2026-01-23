@@ -24,6 +24,7 @@ export const createAccountSchema = z.object({
     type: z.enum(["checking", "savings", "investment", "credit"]),
     institution: z.string().max(100).optional(),
     last4: z.string().length(4).optional(),
+    currentBalance: z.number().nonnegative().optional(),
   }),
   params: z.object({ householdId: z.string().uuid() }),
   query: z.object({}).optional().default({}),
@@ -58,8 +59,24 @@ export const listTransactionsSchema = z.object({
     attributedUserId: z.string().uuid().optional(),
     dateFrom: z.string().optional(),
     dateTo: z.string().optional(),
-    txnType: z.enum(["debit", "credit"]).optional(),
+    txnType: z.enum(["spend", "receive"]).optional(),
   }).optional().default({}),
+});
+
+/** Validation schema for create transaction. */
+export const createTransactionSchema = z.object({
+  body: z.object({
+    accountId: z.string().uuid(),
+    txnType: z.enum(["spend", "receive"]),
+    amount: z.number().positive(),
+    merchant: z.string().min(1).max(200),
+    currency: z.string().optional(),
+    categoryId: z.string().uuid().optional(),
+    note: z.string().max(500).optional(),
+    attributedUserId: z.string().uuid().optional(),
+  }),
+  params: z.object({ householdId: z.string().uuid() }),
+  query: z.object({}).optional().default({}),
 });
 
 /** Validation schema for transaction detail. */
@@ -86,5 +103,14 @@ export const spendingSummarySchema = z.object({
   params: z.object({ householdId: z.string().uuid() }),
   query: z.object({
     period: z.string().optional(),
+  }).optional().default({}),
+});
+
+/** Validation schema for investment summary. */
+export const investmentSummarySchema = z.object({
+  body: z.object({}).optional().default({}),
+  params: z.object({ householdId: z.string().uuid() }),
+  query: z.object({
+    range: z.enum(["1M", "3M", "6M", "1Y", "ALL"]).optional(),
   }).optional().default({}),
 });

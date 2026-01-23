@@ -4,8 +4,7 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { prisma } from "../../db/prisma";
-
-const DEFAULT_AVATAR_URL = "/assets/profile-pictures/Calm.svg";
+import { DEFAULT_AVATAR_URL } from "../../lib/assets";
 
 /** Router for users routes. */
 export const usersRouter = Router();

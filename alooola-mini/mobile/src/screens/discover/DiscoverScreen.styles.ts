@@ -142,6 +142,28 @@ export const styles = StyleSheet.create({
     gap: SPACING.sm,
     marginTop: SPACING.xs,
   },
+  detailBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
+    height: 120,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  detailBarWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    position: 'relative',
+    height: '100%',
+  },
+  detailBarLabel: {
+    fontSize: 10,
+    color: COLORS.subtleInk,
+    marginTop: SPACING.xs,
+  },
   detailChartBars: {
     flexDirection: 'row',
     alignItems: 'flex-end',

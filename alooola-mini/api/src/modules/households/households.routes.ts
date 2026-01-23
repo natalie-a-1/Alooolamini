@@ -1,5 +1,13 @@
 /**
- * Route handlers for the households module.
+ * Express Router for Household-related routes.
+ * 
+ * Provides CRUD operations for households, membership management,
+ * and invitation flows. All routes require authentication.
+ * 
+ * Middleware:
+ *  - requireAuth: Ensure user is authenticated.
+ *  - validate: Validate request body using schemas.
+ *  - requireHouseholdRole: Enforce household role for route access.
  */
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
@@ -21,46 +29,97 @@ import {
   updateMember,
 } from "./households.service";
 
-/** Router for households routes. */
+/** Express router instance for households. */
 export const householdsRouter = Router();
 
-householdsRouter.post("/", requireAuth, validate(createHouseholdSchema), async (req, res, next) => {
-  try {
-    const household = await createHousehold(req.user!.id, req.body.name);
-    res.json({ data: household });
-  } catch (err) {
-    next(err);
+/**
+ * @route POST /households
+ * @desc Create a new household
+ * @access Authenticated users
+ * @body { name: string }
+ * @returns { data: Household }
+ */
+householdsRouter.post(
+  "/",
+  requireAuth,
+  validate(createHouseholdSchema),
+  async (req, res, next) => {
+    try {
+      const household = await createHousehold(req.user!.id, req.body.name);
+      res.json({ data: household });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
-// GET /households - alias for /households/me to prevent 404
-householdsRouter.get("/", requireAuth, async (req, res, next) => {
-  try {
-    const households = await listHouseholds(req.user!.id);
-    res.json({ data: households });
-  } catch (err) {
-    next(err);
+/**
+ * @route GET /households
+ * @desc List all households the authenticated user belongs to
+ * @access Authenticated users
+ * @returns { data: Household[] }
+ * 
+ * Note: This is an alias for GET /households/me to prevent 404s
+ */
+householdsRouter.get(
+  "/",
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const households = await listHouseholds(req.user!.id);
+      res.json({ data: households });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
-householdsRouter.get("/me", requireAuth, async (req, res, next) => {
-  try {
-    const households = await listHouseholds(req.user!.id);
-    res.json({ data: households });
-  } catch (err) {
-    next(err);
+/**
+ * @route GET /households/me
+ * @desc List all households the authenticated user belongs to
+ * @access Authenticated users
+ * @returns { data: Household[] }
+ */
+householdsRouter.get(
+  "/me",
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const households = await listHouseholds(req.user!.id);
+      res.json({ data: households });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
-householdsRouter.get("/:householdId", requireAuth, async (req, res, next) => {
-  try {
-    const household = await getHouseholdDetail(req.user!.id, req.params.householdId);
-    res.json({ data: household });
-  } catch (err) {
-    next(err);
+/**
+ * @route GET /households/:householdId
+ * @desc Get details for a specific household user is a member of
+ * @access Authenticated users
+ * @param householdId - Path param
+ * @returns { data: Household }
+ */
+householdsRouter.get(
+  "/:householdId",
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const household = await getHouseholdDetail(req.user!.id, req.params.householdId);
+      res.json({ data: household });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
+/**
+ * @route GET /households/:householdId/members
+ * @desc List members of a household
+ * @access Household role: owner, member, or viewer
+ * @param householdId - Path param
+ * @returns { data: Member[] }
+ */
 householdsRouter.get(
   "/:householdId/members",
   requireAuth,
@@ -75,6 +134,15 @@ householdsRouter.get(
   }
 );
 
+/**
+ * @route PATCH /households/:householdId/members/:memberId
+ * @desc Update a member's role or information
+ * @access Household role: owner
+ * @body Partial<Member>
+ * @param householdId - Path param
+ * @param memberId - Path param
+ * @returns { data: Member }
+ */
 householdsRouter.patch(
   "/:householdId/members/:memberId",
   requireAuth,
@@ -82,7 +150,11 @@ householdsRouter.patch(
   validate(updateMemberSchema),
   async (req, res, next) => {
     try {
-      const member = await updateMember(req.params.householdId, req.params.memberId, req.body);
+      const member = await updateMember(
+        req.params.householdId,
+        req.params.memberId,
+        req.body
+      );
       res.json({ data: member });
     } catch (err) {
       next(err);
@@ -90,14 +162,25 @@ householdsRouter.patch(
   }
 );
 
-// Remove a member from household (owner only)
+/**
+ * @route DELETE /households/:householdId/members/:memberId
+ * @desc Remove a member from the household
+ * @access Household role: owner
+ * @param householdId - Path param
+ * @param memberId - Path param
+ * @returns { data: any }
+ */
 householdsRouter.delete(
   "/:householdId/members/:memberId",
   requireAuth,
   requireHouseholdRole(["owner"]),
   async (req, res, next) => {
     try {
-      const result = await removeMember(req.params.householdId, req.params.memberId, req.user!.id);
+      const result = await removeMember(
+        req.params.householdId,
+        req.params.memberId,
+        req.user!.id
+      );
       res.json({ data: result });
     } catch (err) {
       next(err);
@@ -105,6 +188,14 @@ householdsRouter.delete(
   }
 );
 
+/**
+ * @route POST /households/:householdId/invites
+ * @desc Create an invitation to join a household
+ * @access Household role: owner
+ * @body { email: string }
+ * @param householdId - Path param
+ * @returns { data: Invite }
+ */
 householdsRouter.post(
   "/:householdId/invites",
   requireAuth,
@@ -112,7 +203,11 @@ householdsRouter.post(
   validate(createInviteSchema),
   async (req, res, next) => {
     try {
-      const invite = await createInvite(req.params.householdId, req.body.email, req.user!.id);
+      const invite = await createInvite(
+        req.params.householdId,
+        req.body.email,
+        req.user!.id
+      );
       res.json({ data: invite });
     } catch (err) {
       next(err);
@@ -120,7 +215,13 @@ householdsRouter.post(
   }
 );
 
-// Leave household - user removes themselves from a household
+/**
+ * @route DELETE /households/:householdId/leave
+ * @desc User removes themselves from a household
+ * @access Authenticated users
+ * @param householdId - Path param
+ * @returns { data: any }
+ */
 householdsRouter.delete(
   "/:householdId/leave",
   requireAuth,

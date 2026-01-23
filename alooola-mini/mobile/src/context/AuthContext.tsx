@@ -47,21 +47,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     async function loadAuthState() {
       try {
-        const [storedToken, storedUser, storedRefreshToken] = await Promise.all([
+        const [storedToken, storedUser] = await Promise.all([
           SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
           SecureStore.getItemAsync(USER_KEY),
-          SecureStore.getItemAsync(REFRESH_TOKEN_KEY),
         ]);
-
-        const hasBiometrics = await LocalAuthentication.hasHardwareAsync();
-        const hasEnrollment = hasBiometrics ? await LocalAuthentication.isEnrolledAsync() : false;
-
-        if (storedRefreshToken && hasBiometrics && hasEnrollment) {
-          const unlocked = await loginWithBiometrics();
-          if (unlocked) {
-            return;
-          }
-        }
 
         if (storedToken && storedUser) {
           setAccessToken(storedToken);
@@ -75,7 +64,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     loadAuthState();
-  }, [loginWithBiometrics]);
+  }, []);
 
   const login = useCallback(async (newUser: User, newAccessToken: string, refreshToken: string) => {
     try {

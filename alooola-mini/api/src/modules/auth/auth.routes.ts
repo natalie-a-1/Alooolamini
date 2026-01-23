@@ -1,10 +1,22 @@
 /**
  * Route handlers for the auth module.
+ *
+ * This file defines REST API endpoints for authentication-related actions, such as:
+ * - Registering a new user
+ * - Logging in and out
+ * - Refreshing tokens
+ * - Email verification
+ * - Referral code validation
+ * - Logging in as a demo account
+ *
+ * Uses validation middleware, rate limiting, and request metadata extraction on incoming requests.
  */
+
 import { Router } from "express";
 import { validate } from "../../middleware/validate";
 import { createRateLimiter } from "../../middleware/rateLimit";
 import { requireAuth } from "../../middleware/auth";
+import { getRequestMeta } from "../../lib/requestMeta";
 import {
   demoSchema,
   emailVerifySchema,
@@ -15,7 +27,7 @@ import {
   validateReferralSchema,
 } from "./auth.schemas";
 import {
-  issueTokens,
+  loginDemoAccount,
   loginWithPassword,
   refreshTokens,
   registerWithPassword,
@@ -24,13 +36,22 @@ import {
   validateReferralCode,
   verifyEmailToken,
 } from "./auth.service";
-import { prisma } from "../../db/prisma";
 
-/** Router for auth routes. */
+/**
+ * The main Express router for authentication endpoints.
+ */
 export const authRouter = Router();
 
+/**
+ * Rate limiter that restricts email-related actions (register) to 10 requests/minute per IP.
+ */
 const emailLimiter = createRateLimiter(60 * 1000, 10);
 
+/**
+ * @route POST /register
+ * @desc Register a new user with email and password, and send verification email.
+ * @access Public
+ */
 authRouter.post("/register", emailLimiter, validate(registerSchema), async (req, res, next) => {
   try {
     const { email, password, referralCode, name } = req.body;
@@ -41,11 +62,15 @@ authRouter.post("/register", emailLimiter, validate(registerSchema), async (req,
   }
 });
 
+/**
+ * @route POST /login
+ * @desc Login with email and password, returns issued tokens and user info.
+ * @access Public
+ */
 authRouter.post("/login", validate(loginSchema), async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const meta = { userAgent: req.get("user-agent") ?? undefined, ipAddress: req.ip };
-    const result = await loginWithPassword(email, password, meta);
+    const result = await loginWithPassword(email, password, getRequestMeta(req));
     res.json({
       data: {
         user: result.user,
@@ -59,6 +84,11 @@ authRouter.post("/login", validate(loginSchema), async (req, res, next) => {
   }
 });
 
+/**
+ * @route POST /referral/validate
+ * @desc Validate a referral code; checks if code exists and is valid.
+ * @access Public
+ */
 authRouter.post("/referral/validate", validate(validateReferralSchema), async (req, res, next) => {
   try {
     const { code } = req.body;
@@ -69,28 +99,41 @@ authRouter.post("/referral/validate", validate(validateReferralSchema), async (r
   }
 });
 
+/**
+ * @route POST /email/verify
+ * @desc Verify signup email by confirming the token sent to user.
+ * @access Public
+ */
 authRouter.post("/email/verify", validate(emailVerifySchema), async (req, res, next) => {
   try {
     const { email, token } = req.body;
-    const meta = { userAgent: req.get("user-agent") ?? undefined, ipAddress: req.ip };
-    const result = await verifyEmailToken(email, token, meta);
+    const result = await verifyEmailToken(email, token, getRequestMeta(req));
     res.json({ data: { user: result.user, ...result.tokens, needsOnboarding: result.needsOnboarding } });
   } catch (err) {
     next(err);
   }
 });
 
+/**
+ * @route POST /refresh
+ * @desc Refreshes an expired access token using a refresh token.
+ * @access Public
+ */
 authRouter.post("/refresh", validate(refreshSchema), async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
-    const meta = { userAgent: req.get("user-agent") ?? undefined, ipAddress: req.ip };
-    const result = await refreshTokens(refreshToken, meta);
+    const result = await refreshTokens(refreshToken, getRequestMeta(req));
     res.json({ data: { user: result.user, accessToken: result.accessToken, refreshToken: result.refreshToken } });
   } catch (err) {
     next(err);
   }
 });
 
+/**
+ * @route POST /logout
+ * @desc Revoke a refresh token or all of the current user's tokens; ends session.
+ * @access Protected (Auth required)
+ */
 authRouter.post("/logout", requireAuth, validate(logoutSchema), async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
@@ -105,37 +148,15 @@ authRouter.post("/logout", requireAuth, validate(logoutSchema), async (req, res,
   }
 });
 
-// Demo login - uses the pre-seeded demo account with full mock data
-const DEMO_EMAIL = "alex.morgan@alooola.dev";
-
+/**
+ * @route POST /demo
+ * @desc Log in using a pre-seeded demo account (for testing/demo with full mock data).
+ * @access Public
+ */
 authRouter.post("/demo", validate(demoSchema), async (req, res, next) => {
   try {
-    // Always use the pre-seeded demo account
-    const user = await prisma.user.findUnique({
-      where: { email: DEMO_EMAIL },
-    });
-
-    if (!user) {
-      // If demo user doesn't exist, it means seed hasn't been run
-      // Create a minimal demo user as fallback
-      const fallbackUser = await prisma.user.upsert({
-        where: { email: DEMO_EMAIL },
-        update: {},
-        create: { email: DEMO_EMAIL, name: "Alex Morgan" },
-      });
-      const tokens = await issueTokens(fallbackUser.id, fallbackUser.email, { 
-        userAgent: req.get("user-agent") ?? undefined, 
-        ipAddress: req.ip 
-      });
-      res.json({ data: { user: fallbackUser, ...tokens } });
-      return;
-    }
-
-    const tokens = await issueTokens(user.id, user.email, { 
-      userAgent: req.get("user-agent") ?? undefined, 
-      ipAddress: req.ip 
-    });
-    res.json({ data: { user, ...tokens } });
+    const result = await loginDemoAccount(getRequestMeta(req), req.body);
+    res.json({ data: result });
   } catch (err) {
     next(err);
   }

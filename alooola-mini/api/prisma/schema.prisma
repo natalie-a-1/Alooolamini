@@ -40,8 +40,8 @@ enum RiskTolerance {
 }
 
 enum TxnType {
-  debit
-  credit
+  spend
+  receive
 
   @@map("txn_type")
 }
